@@ -431,5 +431,4 @@ module_exit(signal_test_exit);
 
 MODULE_AUTHOR ("Thomas Schmidt <t.schmidt(at)md-network.de>");
 MODULE_DESCRIPTION ("HighR Timer based UDP sender");
-/* MODULE_LICENSE("Proprietary"); */
-MODULE_LICENSE("GPL"); /* Unfortunately: PL-incompatible module signal-test-mod.ko uses GPL-only symbol 'hrtimer_start_range_ns' if License= "Propitary" */
+MODULE_LICENSE("GPL");
