@@ -15,7 +15,7 @@
  *   	Configuration can be found in /proc/PROC_ENTRY_FILENAME (see define below)
  *   	The file contains following options:
  *		packet.size 		-  UDP packet size, maximal 1420, default MAX_MESSAGE_SIZE, e.g. "1420"
- *		timer.msec		-  timer milli seconds
+ *		timer.usec		-  timer micro seconds
  *		addr.remote.ip		-  remote IP address in dotted format, default "1.1.1.2" 
  *		addr.remote.port	-  remote UDP port, default "1234"
  *
@@ -50,7 +50,7 @@
 #include <net/sock.h>
 #include <linux/kthread.h> 
 
-static unsigned int timer_msec; 					/* milli seconds of inter packet delay timer */
+static unsigned int timer_usec; 					/* micro seconds of inter packet delay timer */
 static unsigned int packet_size = 512;					/* UDP packet size, default 512 bytes */
 static unsigned int remote_port = 1234;					/* remote port for UDP packet, default 1234 */
 static unsigned long int remote_addr =  0x02010101;  			/* remote IP address in int32 format network byte order */
@@ -140,7 +140,7 @@ static void setup_net(void) {
  */
 static int st_show(struct seq_file *m, void *v) {
     seq_printf(m, "packet.size: %u\n", packet_size);
-    seq_printf(m, "timer.msec: %u\n", timer_msec);
+    seq_printf(m, "timer.usec: %u\n", timer_usec);
     seq_printf(m, "addr.remote.ip: %lu.%lu.%lu.%lu\n", (remote_addr & 0x000000ff), ((remote_addr & 0x0000ff00) >>8), ((remote_addr & 0x00ff0000) >>16), (remote_addr >>24));
     seq_printf(m, "addr.remote.port: %u\n", remote_port);
     
@@ -281,12 +281,12 @@ static ssize_t st_write(struct file *file, const char *buffer, size_t len, loff_
 
     // check if given parameter is valid - if so convert it to it's value
 
-    if(!strncmp(procfs_parameter, "timer.msec", PROCFS_MAX_SIZE)) {
+    if(!strncmp(procfs_parameter, "timer.usec", PROCFS_MAX_SIZE)) {
 
 	PROC_TO_INT(integer_data > 0 , 
-		    timer_msec, 
-		    "timer.msec", 
-		    printk(KERN_WARNING "timer.msec can't be 0\n"));
+		    timer_usec, 
+		    "timer.usec", 
+		    printk(KERN_WARNING "timer.usec can't be 0\n"));
 		    	
     } else if (!strncmp(procfs_parameter, "packet.size", PROCFS_MAX_SIZE) ) {
     // is it packet.size, convert it to int, assign it to packet_size variable, this is automatically taken by netpoll 
@@ -349,13 +349,13 @@ int net_thread(void *data) {
     setup_net();
 
     memset(message, (int) 'x', MAX_MESSAGE_SIZE);
-    timer_msec = 1000;
+    timer_usec = 1000000;
 
     
     while(!kthread_should_stop()) {
 	net_send();	
 	
-	timeout = ktime_add_us(timeout, timer_msec);
+	timeout = ktime_add_us(timeout, timer_usec);
 	__set_current_state(TASK_UNINTERRUPTIBLE);
 	schedule_hrtimeout_range(&timeout, 100, HRTIMER_MODE_ABS);
     }

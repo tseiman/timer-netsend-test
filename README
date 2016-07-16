@@ -20,8 +20,6 @@ Readme - TBC
 	    - timer-kernel-to-userspace
 	+ Folder "kernelspace"
 	    - timer-netsend-test-signal-mod
-	    - timer-netsend-test-udp-mod
-	    - timer-netsend-test-udp-mod2
 	    - timer-netsend-test-udp-sock-thread-mod	
 	+ Folder "tools"
 	    - stress-ng
@@ -256,41 +254,18 @@ Overview of scripts and binaries
 	Please note the '=' between parameter and value.
 
 
-    - timer-netsend-test-udp-mod
-	this module runs standalone in kernel space and implements a setup of hrtimer as well as the UDP data send on hrtimer callback.
-	The UDP send is implemented ith the netpoll API.
+    - timer-netsend-test-udp-sock-thread-mod
 
-	The module creates a proc entry "/proc/udp_ktest" which contains 3 parameters and which are used to configure the
+	this module runs standalone in kernel space and implemnts the scheduling in a separated kernel thread and with high precision scheduling 
+	UDP send is implemetned with the kernel socket "API".
+
+	The module creates a proc entry "/proc/udp_ktest" which contains 4 parameters and which are used to configure the
 	module during runtime. The netpoll API needs some more parameters as local interface information. 
 	To configure the module the parameters are:
 
-	    packet.size		- the UDP payload - has not to be 0 and not to be >1420 bytes (because of MTU - IP+UDP Header), default is 512
-	    timer.sec		- the timer interval in seconds, default is 1, it is not allowed to have this value <1 in case timer.nsec is <1000
-	    timer.nsec		- the timer interval in nano seconds, default is 0, it is not allowed to have this value <1000 in case timer.sec is 0
-	    ethernet.dev	- the ethernet device which should be used to send the UDP packets (needed by netpoll), default is "eth0"
-	    addr.local.ip	- needs to be set to the local IP address of the ethernet device given with the parameter "ethernet.dev", default is "1.1.1.9"
-	    addr.local.port	- gives the local sender UDP port, default is "1234"
-	    addr.remote.ip	- gives the target IP, default is "1.1.1.2"
-	    addr.remote.port	- gives the remote receiver UDP port, default is "1234"
-	    addr.remote.mac	- gives the remote MAC address, default is "01:02:03:04:05:06"
-
-	The configuration might be read by giving commadline command:
-	    ~> cat /proc/udp_ktest
-	    
-	This configuration migth be updated by writing new value to the parameter e.g.:
-	    ~> echo "addr.remote.mac=01:02:03:04:05:06" >/proc/udp_ktest
-
-	Please note the '=' between parameter and value.
-	When this module is loaded, no other timer-netsend-test module should be loaded - or not any other timer-netsend-test user space process should run.
-     
-
-    - timer-netsend-test-udp-mod2
-	this module implemnts the same functionality as "timer-netsend-test-udp-mod", however it implements the UDP send with the kernel socket API.
-	The kernel socket API needs less parameters to setup a UDP sender. This are:
 
 	    packet.size		- the UDP payload - has not to be 0 and not to be >1420 bytes (because of MTU - IP+UDP Header), default is 512
-	    timer.sec		- the timer interval in seconds, default is 1, it is not allowed to have this value <1 in case timer.nsec is <1000
-	    timer.nsec		- the timer interval in nano seconds, default is 0, it is not allowed to have this value <1000 in case timer.sec is 0
+	    timer.usec		- the timer interval in micro seconds, default is 1000000, it is not allowed to have this value <1
 	    addr.remote.ip	- gives the target IP, default is "1.1.1.2"
 	    addr.remote.port	- gives the remote receiver UDP port, default is "1234"
 
@@ -303,11 +278,6 @@ Overview of scripts and binaries
 	Please note the '=' between parameter and value.
 	When this module is loaded, no other timer-netsend-test module should be loaded - or not any other timer-netsend-test user space process should run.
 
-
-    - timer-netsend-test-udp-sock-thread-mod
-	NOT READY, EXPERIMENTAL ! 
-	This module tries to fix instability caused by the modules "timer-netsend-test-udp-mod" and "timer-netsend-test-udp-mod2" especially the "spin lock" crash and runs in a own thread
-	it implements same rpc interface as "timer-netsend-test-udp-mod2".
 
 
     Folder "tools":

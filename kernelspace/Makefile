@@ -1,5 +1,5 @@
 
-obj-m += timer-netsend-test-signal-mod.o timer-netsend-test-udp-mod.o timer-netsend-test-udp-mod2.o timer-netsend-test-udp-sock-thread-mod.o
+obj-m += timer-netsend-test-signal-mod.o timer-netsend-test-udp-sock-thread-mod.o
 #udp-test-mod.o
 
 all:
