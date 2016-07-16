@@ -15,8 +15,7 @@
  *   	Configuration can be found in /proc/PROC_ENTRY_FILENAME (see define below)
  *   	The file contains following options:
  *		packet.size 		-  UDP packet size, maximal 1420, default MAX_MESSAGE_SIZE, e.g. "1420"
- *		timer.sec		-  timer seconds - can't be 0 if nano seconds less than 1000, e.g. "1"
- *		timer.nsec		-  timer nano seconds - can't be less than 1000 if seconds are 0, e.g. "1000"
+ *		timer.msec		-  timer milli seconds
  *		addr.remote.ip		-  remote IP address in dotted format, default "1.1.1.2" 
  *		addr.remote.port	-  remote UDP port, default "1234"
  *
@@ -51,16 +50,12 @@
 #include <net/sock.h>
 #include <linux/kthread.h> 
 
-static unsigned int timer_sec; 						/* seconds of inter packet delay timer */
-static unsigned int timer_nsec;						/* nano seconds of inter packet delay timer */
+static unsigned int timer_msec; 					/* milli seconds of inter packet delay timer */
 static unsigned int packet_size = 512;					/* UDP packet size, default 512 bytes */
 static unsigned int remote_port = 1234;					/* remote port for UDP packet, default 1234 */
 static unsigned long int remote_addr =  0x02010101;  			/* remote IP address in int32 format network byte order */
 static char message[MAX_MESSAGE_SIZE];					/* buffer to store UDP message */
 static int net_setup_ok = FALSE;					/* flag get TRUE in case the netpoll setup was ok */
-
-static struct hrtimer htimer;						/* Structures to maintain high resolution timer information */
-static ktime_t kt_period;
 
 static struct socket *clientsocket=NULL;
 
@@ -73,12 +68,15 @@ static unsigned long procfs_buffer_size = 0;				/* stores size of data written t
 
 
 
-/* 
- * callback for the high resolution timer 
- * in case the netpoll setup was ok, UDP packet is send
- * and timer is re-armed
+
+
+
+/*
+ * sets up network parameters and 
+ * sends a packet to the network
  */
-static enum hrtimer_restart timer_callback(struct hrtimer * timer) {	
+
+static void net_send(void) {
     int len;
     mm_segment_t oldfs;
     struct sockaddr_in destination;
@@ -86,7 +84,7 @@ static enum hrtimer_restart timer_callback(struct hrtimer * timer) {
     struct msghdr msg;
     struct iovec iov;  
      
-    if(!net_setup_ok) return HRTIMER_RESTART;
+    if(!net_setup_ok) return;
 
     memset(&msg, 0, sizeof(msg));
 
@@ -111,30 +109,9 @@ static enum hrtimer_restart timer_callback(struct hrtimer * timer) {
     set_fs( oldfs );
     if( len < 0 ) printk( KERN_ERR "sock_sendmsg returned: %dn", len);
 
-    
-    hrtimer_forward_now(timer, kt_period);
-    return HRTIMER_RESTART;
 }
 
 
-/* 
- * initilizes the high resolution timer with data from configuration (e.g. procfs)
- * this is called as well when new configuration is writen 
- */
-static void start_timer(void) {
-    kt_period = ktime_set(timer_sec, timer_nsec); //seconds,nanoseconds
-    hrtimer_init (& htimer, CLOCK_REALTIME, HRTIMER_MODE_REL);
-    htimer.function = &timer_callback;
-    hrtimer_start(& htimer, kt_period, HRTIMER_MODE_REL);
-}
-
-/*
- * cancels any timer activity
- * caled as well before start_timer() in case of reconfiguration
- */
-static void stop_timer(void) {
-    hrtimer_cancel( &htimer );    
-}
 
 
 /*
@@ -163,8 +140,7 @@ static void setup_net(void) {
  */
 static int st_show(struct seq_file *m, void *v) {
     seq_printf(m, "packet.size: %u\n", packet_size);
-    seq_printf(m, "timer.sec: %u\n", timer_sec);
-    seq_printf(m, "timer.nsec: %u\n", timer_nsec);
+    seq_printf(m, "timer.msec: %u\n", timer_msec);
     seq_printf(m, "addr.remote.ip: %lu.%lu.%lu.%lu\n", (remote_addr & 0x000000ff), ((remote_addr & 0x0000ff00) >>8), ((remote_addr & 0x00ff0000) >>16), (remote_addr >>24));
     seq_printf(m, "addr.remote.port: %u\n", remote_port);
     
@@ -305,27 +281,13 @@ static ssize_t st_write(struct file *file, const char *buffer, size_t len, loff_
 
     // check if given parameter is valid - if so convert it to it's value
 
-    if(!strncmp(procfs_parameter, "timer.sec", PROCFS_MAX_SIZE)) {
-    // is it timer.sec, convert it to int, assign it to timer_sec variable and restart timer 
+    if(!strncmp(procfs_parameter, "timer.msec", PROCFS_MAX_SIZE)) {
 
-	PROC_TO_INT(integer_data > 0 || timer_nsec >= 1000 , 
-		    timer_sec, 
-		    "timer.sec", 
-		    printk(KERN_WARNING "timer.sec can't be 0 and timer.nsec < 1000 at the same time\n"));
-	stop_timer();
-	start_timer();
+	PROC_TO_INT(integer_data > 0 , 
+		    timer_msec, 
+		    "timer.msec", 
+		    printk(KERN_WARNING "timer.msec can't be 0\n"));
 		    	
-
-    } else if (!strncmp(procfs_parameter, "timer.nsec", PROCFS_MAX_SIZE) ) {
-    // is it timer.nsec, convert it to int, assign it to timer_nsec variable and restart timer 
-
-	PROC_TO_INT(timer_sec > 0 || integer_data >= 1000, 
-		    timer_nsec, 
-		    "timer.nsec", 
-		    printk(KERN_WARNING "timer.sec can't be 0 and timer.nsec < 1000 at the same time\n"));
-	stop_timer();
-	start_timer();
-
     } else if (!strncmp(procfs_parameter, "packet.size", PROCFS_MAX_SIZE) ) {
     // is it packet.size, convert it to int, assign it to packet_size variable, this is automatically taken by netpoll 
 
@@ -375,25 +337,28 @@ static const struct file_operations st_fops = {
 };
 
 
-int net_thread(void *data) {
-    memset(message, (int) 'x', MAX_MESSAGE_SIZE);
-    timer_sec = 1;
-    timer_nsec = 0;
 
-    
+/*
+ * function runs in a seperate thread,
+ * handling high precision scheduling and trigger periodically
+ * network sending function
+ */
+int net_thread(void *data) {
+    ktime_t timeout = ktime_get();
+
     setup_net();
 
-    start_timer();
+    memset(message, (int) 'x', MAX_MESSAGE_SIZE);
+    timer_msec = 1000;
 
     
-    while(!kthread_should_stop()){
-         schedule();
+    while(!kthread_should_stop()) {
+	net_send();	
+	
+	timeout = ktime_add_us(timeout, timer_msec);
+	__set_current_state(TASK_UNINTERRUPTIBLE);
+	schedule_hrtimeout_range(&timeout, 100, HRTIMER_MODE_ABS);
     }
-    stop_timer();
-    
-    if( clientsocket ) sock_release( clientsocket );
-
-    
 
     return 0;
 }
@@ -404,13 +369,22 @@ int net_thread(void *data) {
  * sets up the timer and network functions and registers proc entry
  */ 
 static int __init signal_test_init(void) {
+    struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
     
     printk(KERN_INFO"Starting signal test module\n");
 
+
     proc_create(PROC_ENTRY_FILENAME, 0, NULL, &st_fops);
 
-    task = kthread_run(&net_thread, NULL,"timer-netsend-test-udp");
-
+    task = kthread_create(&net_thread, NULL,"timer-netsend-test-udp");
+    if (IS_ERR(task)) {
+	printk(KERN_ERR "Failed to create timer-netsend-test-udp thread\n");
+	return -ESRCH;
+    }
+    
+    sched_setscheduler(task, SCHED_FIFO, &param);
+    wake_up_process(task);
+    
     return 0;
 }
 
@@ -420,15 +394,22 @@ static int __init signal_test_init(void) {
  */ 
 
 static void __exit signal_test_exit(void) {
-    printk(KERN_INFO"Stopping signal test module\n");
      kthread_stop(task);  
+
+
+    
+    if( clientsocket ) sock_release( clientsocket );
+
+
     remove_proc_entry(PROC_ENTRY_FILENAME, NULL);
+    printk(KERN_INFO"Signal test module stopped\n");
+
 }
 
 module_init(signal_test_init);
 module_exit(signal_test_exit);
 
 
-MODULE_AUTHOR ("Thomas Schmidt <t.schmidt(at)md-network.de>");
+MODULE_AUTHOR ("Thomas Schmidt <thomas.schmidt@exfo.com>");
 MODULE_DESCRIPTION ("HighR Timer based UDP sender");
 MODULE_LICENSE("GPL");
