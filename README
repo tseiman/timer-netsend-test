@@ -260,8 +260,7 @@ Overview of scripts and binaries
 	UDP send is implemetned with the kernel socket "API".
 
 	The module creates a proc entry "/proc/udp_ktest" which contains 4 parameters and which are used to configure the
-	module during runtime. The netpoll API needs some more parameters as local interface information. 
-	To configure the module the parameters are:
+	module during runtime. To configure the module the parameters are:
 
 
 	    packet.size		- the UDP payload - has not to be 0 and not to be >1420 bytes (because of MTU - IP+UDP Header), default is 512
