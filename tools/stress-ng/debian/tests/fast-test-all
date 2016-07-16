@@ -1,0 +1,47 @@
+#!/bin/bash 
+set -e
+
+#
+# Tests that can lock up some kernels or are CPU / arch specific, so exclude them for now
+#
+EXCLUDE="sysfs procfs rdrand numa quota apparmor cpu-online kcmp copy-file mmapmany userfaultfd getrandom aio aiol tsc membarrier bind-mount sockpair remap"
+#
+# Get built-in stressor names
+#
+STRESSORS=$(stress-ng --help | grep "\-ops " | awk '{print $1}' | sed 's/--//' | sed 's/-ops//g')
+rc=0
+
+not_exclude()
+{
+	for x in $2
+	do
+		if [ $x == $1 ]
+		then
+			return 1
+		fi
+	done
+	return 0
+}
+
+p=0
+f=0
+for s in ${STRESSORS}
+do
+	if not_exclude $s "$EXCLUDE"
+	then
+		stress-ng -v -t 1 --${s} 4 2>&1
+		if [ $? -ne 0 ]
+		then
+			echo "$s FAILED"
+			f=$((f + 1))
+		else
+			echo "$s PASSED"
+			p=$((p + 1))
+		fi
+	fi
+done
+
+echo "$p PASSED"
+echo "$f FAILED"
+
+exit $rc
