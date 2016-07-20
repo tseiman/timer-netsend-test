@@ -70,20 +70,20 @@ The Suite consist of following parts:
 
 ## The setup in a nutshell
 
-    +------------------------+                        +--------------------+                   +---------------------+
-    |   System Under Test    |                        | Lattice Versa ECP3 |                   |      Monitoring     |
-    |         Host           |                        |  Evaluation Board  |                   |       Computer      |
-    | ====================== |                        |        FPGA        |                   |                     |
-    |                        |                        |  meassuring delay  |                   | Runs:               |
-    | Runs:                  |                        | between incomming  |                   |  - script to poll   |
-    |  - traffic generator   |                        |      packets       |                   |    FPGA meassurment |
-    |    sending UDP packets |                        |                    |                   |                     |
-    |  - CPU stresser        |                        |              RS232 +--->--->--->--->---+ FTDI, USB UART      |
-    |  - CPU monitor script  |                        |         38400, 8N2 |                   |                     |
-    |                        |     1GBit direct       |                    |                   |                     |
-    |          eth interface +---->---->---->---->----+ FPGA PHY           |                   |                     |
-    |             1.1.1.9/24 |     Ethernet Cable     | 01:02:03:04:05:06  |                   |                     |
-    +------------------------+                        +--------------------+                   +---------------------+
+    +------------------------+                        +--------------------+           +---------------------+
+    |   System Under Test    |                        | Lattice Versa ECP3 |           |      Monitoring     |
+    |         Host           |                        |  Evaluation Board  |           |       Computer      |
+    | ====================== |                        |        FPGA        |           |                     |
+    |                        |                        |  meassuring delay  |           | Runs:               |
+    | Runs:                  |                        | between incomming  |           |  - script to poll   |
+    |  - traffic generator   |                        |      packets       |           |    FPGA meassurment |
+    |    sending UDP packets |                        |                    |           |                     |
+    |  - CPU stresser        |                        |              RS232 +--->--->---+ FTDI, USB UART      |
+    |  - CPU monitor script  |                        |         38400, 8N2 |           |                     |
+    |                        |     1GBit direct       |                    |           |                     |
+    |          eth interface +---->---->---->---->----+ FPGA PHY           |           |                     |
+    |             1.1.1.9/24 |     Ethernet Cable     | 01:02:03:04:05:06  |           |                     |
+    +------------------------+                        +--------------------+           +---------------------+
     
     
 
