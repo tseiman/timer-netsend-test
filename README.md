@@ -7,11 +7,11 @@ This document is not complete yet. some passages are marked with "TBC"="To be Co
 
 ## Content:
 - [Note] (#note)
-    * Overview
-    * Requires
-    * Assumptions
-    * The setup in a nutshell
-    * Overview of scripts and binaries
+- [Overview] (#overview)
+- [Requires] (#requires)
+- [Assumptions] (#assumptions)
+- [The setup in a nutshell] (#The setup in a nutshell)
+- [Overview of scripts and binaries] (#Overview of scripts and binaries)
 	+ Folder "scripts"
 	    - ecp3-ethtest-statreader.pl
 	    - setup_udp-test-mod.sh
@@ -27,17 +27,16 @@ This document is not complete yet. some passages are marked with "TBC"="To be Co
 	    - timer-netsend-test-udp-sock-thread-mod	
 	+ Folder "tools"
 	    - stress-ng
-    * Setting up ETH Interface
-    * Setting up test processes on the tested plattform
-    * Setting up load for tested plattform
-    * FPGA board meassurment description
-    * FPGA board configuration
-
+- [Setting up ETH Interface] (#Setting up ETH Interface)
+- [Setting up test processes on the tested plattform] (#Setting up test processes on the tested plattform)
+- [Setting up load for tested plattform] (#Setting up load for tested plattform)
+- [FPGA board meassurment description] (#FPGA board meassurment description)
+- [FPGA board configuration] (#FPGA board configuration)
+- [Links] (#links)
 
 ============================================================
 
- Note
-------
+## Note
     This is experimetnal software to test the behavior of linux in load conditions. It is not meant in any way as productional software or as 
     example of good linux (linux) programming. 
 
@@ -45,8 +44,7 @@ This document is not complete yet. some passages are marked with "TBC"="To be Co
     >>>> Any damage caused by this software or softweare derived from it, is in the responsibility of the user ! <<<<
     =================================================================================================================
 
- Overview:
-----------
+## Overview
     Timer-Test suite contains a couple of scripts and programs to generate UDP packets on a System Under Test (SUT) computer 
     and to meassure the Network udp send() stability in dependency of the SUT system load. The Network performance is meassured with
     a dedicated FPGA setup.
@@ -59,16 +57,14 @@ This document is not complete yet. some passages are marked with "TBC"="To be Co
 	  mixed user space and kernel space and pure kernel space, supposed to run on SUT.
 	- scripts to generate graphs from the meassurements.
 
- Requires:
-----------
+## Requires
     - gcc >4.0
     - Linux Kernel headers
     - Linux Kernel >2.6
     - Perl >= 5.2
     - linux stress-ng tool http://smackerelofopinion.blogspot.de/2014/06/stress-ng-updated-system-stress-test.html
 
- Assumptions
------------------------------
+## Assumptions
     - FPGA Lattice ECP3 Versa development board and System Under Test host are directly connected via ethernet cable
     - FPGA Board has MAC 01:02:03.04:05:06 and doesn't support IP layer or ARP
     - to sattisfy system under test host the network interface for the FPGA board assuned to have IP 1.1.1.2/24
@@ -76,8 +72,7 @@ This document is not complete yet. some passages are marked with "TBC"="To be Co
     - ARP entry needs to be set manualy
 
 
- The setup in a nutshell
--------------------------
+## The setup in a nutshell
 
     +------------------------+                        +--------------------+                   +---------------------+
     |   System Under Test    |                        | Lattice Versa ECP3 |                   |      Monitoring     |
@@ -96,14 +91,12 @@ This document is not complete yet. some passages are marked with "TBC"="To be Co
     
     
 
-Overview of scripts and binaries
---------------------------------------
+## Overview of scripts and binaries
 
 
-    Folder "scripts":
-    -----------------
+### Folder "scripts":
         
-    - ecp3-ethtest-statreader.pl
+#### ecp3-ethtest-statreader.pl
 	
 	This script reads measurement data from Lattice ECP3 Versa development board via FTDI/RS232.
 	
@@ -147,11 +140,11 @@ Overview of scripts and binaries
 	It is supposed to run on the monitoring computer.
 
 
-    - setup_udp-test-mod.sh
+#### setup_udp-test-mod.sh
 	this script helps to configure the pure kernel space UDP sender, feel free to edit content. It is supposed to run on the SUT.
     
     
-    - simple_packet_test.pl
+#### simple_packet_test.pl
 	this is a simple perl based UDP packet sender to test the FPGA setup. 
 	It assumes that the local sender's host IP is configured in a 1.1.1.x/24 network 
 	and that the receiver has IP 1.1.1.2 and MAC address 01:02:03:04:05:06 (=FPGA ECP Dev Board).
@@ -163,7 +156,7 @@ Overview of scripts and binaries
 	Feels free to edit the script for Network settings etc.
     
     
-    - poll_cpustatus.pl
+#### poll_cpustatus.pl
 	this Perl script polls the CPU utilisation and writes it either to STDOUt or to a CSV file. The CSV file has the format
 	        Unix_Time,CPU_Usage,
 	        
@@ -179,13 +172,13 @@ Overview of scripts and binaries
         poll_cpustatus.pl should run on the System Under Test (SUT)
                     
 
-    - cpu_stress_control.sh
+#### cpu_stress_control.sh
 	this script should run as well on the System Under Test (SUT) Computer and untilizes the CPUs to test the impact on the network performance
 	which is generated wit the network testing programs. This script needs to be edited and adapted to to needs of the SUT system.
 	This script makes use of the stress-ng tool which needs to be compiled before. The script expects the stress-ng binary in tools/stress-ng/ path.
 	
 	
-    - csv2html.pl
+#### csv2html.pl
 	creates dygraph HTML files from csv files and uses a special HTML file as template. 
 	It expect the first CSV column to be Unix Time in seconds after 1st Jan 1970. 
 	This scripts takes a number of command line arguments which are mandatory. E.g.:
@@ -205,10 +198,9 @@ Overview of scripts and binaries
 						    UnixTime,EventDescription,
 						It will create anntotations in the graph highlighting special events (e.g. manually logged).
 
-    Folder "userspace":
-    --------------------
+### Folder "userspace":
     
-    - timer-userspace-only
+#### timer-userspace-only
     	this program generates UDP packets purely in userspace. It might be executed with elevated rights and priority. 
     	This program takes couple of command line parameters:
     	    -b N	the size of payload in UDP packet >0 and <= 1420 (because of MTU - IP+UDP Header), default is 512
@@ -219,7 +211,7 @@ Overview of scripts and binaries
     	All other timer test kernel modules and programs should be stopped or unloaded.
 
 
-    - timer-kernel-to-userspace
+#### timer-kernel-to-userspace
 	this program demonstrate a split of functionality where the network part is implemnted in this executable in user space
 	and the the timer part in the kernel module "timer-netsend-test-signal-mod". The module  "timer-netsend-test-signal-mod" runs a 
 	kernel HRTimer and triggers on each timer event a system signal, sent to this "timer-kernel-to-userspace" process.
@@ -230,8 +222,7 @@ Overview of scripts and binaries
 	with the kernel module. Please read as well "timer-netsend-test-signal-mod" description.
 
     	
-    Folder "kernelspace":
-    ----------------------
+### Folder "kernelspace":
     
     Modules might be loaded with "~> insmod <module name.ko>" unlaoded with "~> rmmod <module name>". 
     The modules will (depending on kernel configuration) generating a "Tainted" stack trace in kernel log - which should be ok for the moment.
@@ -239,7 +230,7 @@ Overview of scripts and binaries
         
     PLEASE NOTE: this are experimental modules and might crash the system
 
-    - timer-netsend-test-signal-mod
+#### timer-netsend-test-signal-mod
 	this module runs a timer and on each timer event a SIGIO signal is sent to the process which might be registered.
 	This module is made to run with the user space program "timer-kernel-to-userspace". Please read this description as well above.
 	The module creates a proc entry "/proc/signal_ktest" which contains 3 parameters and which are used to configure the
@@ -258,7 +249,7 @@ Overview of scripts and binaries
 	Please note the '=' between parameter and value.
 
 
-    - timer-netsend-test-udp-sock-thread-mod
+#### timer-netsend-test-udp-sock-thread-mod
 
 	this module runs standalone in kernel space and implemnts the scheduling in a separated kernel thread and with high precision scheduling 
 	UDP send is implemetned with the kernel socket "API".
@@ -283,18 +274,16 @@ Overview of scripts and binaries
 
 
 
-    Folder "tools":
-    ----------------
+### Folder "tools":
     
-    - stress-ng
+#### stress-ng
 	this tool is used to utilize the CPU of the System Under Test (SUT) to test it's beahvior. The script "cpu_stress_control.sh"
 	uses this tool. It is downloaded http://smackerelofopinion.blogspot.de/2014/06/stress-ng-updated-system-stress-test.html and copied here
 	to keep compatibility with the scripts.
 
 
 
- Setting up ETH Interface:
------------------------------
+## Setting up ETH Interface:
 
     - assuming, even there is no IP and ARP stack implemented on measurement
       FPGA card the IP to be 1.1.1.2/24
@@ -315,26 +304,21 @@ Overview of scripts and binaries
 
 
 
- Setting up test processes on the tested plattform
---------------------------------------------------
+## Setting up test processes on the tested plattform
  TBD
 
 
- Setting up load for tested plattform
---------------------------------------
+## Setting up load for tested plattform
  TBD
 
 
- FPGA board meassurment description
---------------------------------------
+## FPGA board meassurment description
  TBD
 
- FPGA board configuration
---------------------------------------
+## FPGA board configuration
  TBD
 
- Links
---------------------------------------
+## Links
  http://www.falsig.org/simon/blog/2013/07/10/real-time-linux-kernel-drivers-part-3-the-better-implementation/
  
  
