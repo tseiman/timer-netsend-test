@@ -11,21 +11,21 @@ This document is not complete yet. some passages are marked with "TBC"="To be Co
 - [Assumptions] (#assumptions)
 - [The setup in a nutshell] (#the-setup-in-a-nutshell)
 - [Overview of scripts and binaries] (#overview-of-scripts-and-binaries)
-..+ Folder "scripts"
-...- ecp3-ethtest-statreader.pl
-...- setup_udp-test-mod.sh
-...- simple_packet_test.pl    
-...- poll_cpustatus.pl
-...- cpu_stress_control.sh
-...- csv2html.pl
-.. + Folder "userspace"
-...- timer-userspace-only
-...- timer-kernel-to-userspace
-..+ Folder "kernelspace"
-...- timer-netsend-test-signal-mod
-...- timer-netsend-test-udp-sock-thread-mod	
-..+ Folder "tools"
-...- stress-ng
+  + [Folder "scripts"] (#folder-scripts)
+    - [ecp3-ethtest-statreader.pl] (#ecp3-ethtest-statreader.pl)
+    - [setup_udp-test-mod.sh] (#setup_udp-test-mod.sh)
+    - [simple_packet_test.pl] (#simple_packet_test.pl)
+    - [poll_cpustatus.pl] (#poll_cpustatus.pl)
+    - [cpu_stress_control.sh] (#cpu_stress_control.sh)
+    - [csv2html.pl] (#csv2html.pl)
+  + [Folder "userspace"] (#folder-userspace)
+    - [timer-userspace-only] (#timer-userspace-only)
+    - [timer-kernel-to-userspace] (#timer-kernel-to-userspace)
+  + [Folder "kernelspace"] (#folder-kernelspace)
+    - [timer-netsend-test-signal-mod] (#timer-netsend-test-signal-mod)
+    - [timer-netsend-test-udp-sock-thread-mod] (#timer-netsend-test-udp-sock-thread-mod)
+  + [Folder "tools"] (#folder-tools)
+    - [stress-ng] (#stress-ng)
 - [Setting up ETH Interface] (#setting-up-eth-interface)
 - [Setting up test processes on the tested plattform] (#setting-up-test-processes-on-the-tested-plattform)
 - [Setting up load for tested plattform] (#setting-up-load-for-tested-plattform)
