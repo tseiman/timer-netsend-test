@@ -67,6 +67,11 @@ static unsigned long procfs_buffer_size = 0;				/* stores size of data written t
 
 
 
+mm_segment_t oldfs;
+struct sockaddr_in destination;
+struct iov_iter iov_iter;
+struct msghdr msg;
+struct iovec iov;  
 
 
 
@@ -78,30 +83,8 @@ static unsigned long procfs_buffer_size = 0;				/* stores size of data written t
 
 static void net_send(void) {
     int len;
-    mm_segment_t oldfs;
-    struct sockaddr_in destination;
-    struct iov_iter iov_iter;
-    struct msghdr msg;
-    struct iovec iov;  
      
     if(!net_setup_ok) return;
-
-    memset(&msg, 0, sizeof(msg));
-
-
-    destination.sin_family = AF_INET;
-    destination.sin_addr.s_addr = remote_addr; 
-    destination.sin_port = htons(remote_port);
-
-    msg.msg_name = &destination;
-    msg.msg_namelen = sizeof(destination);
-    msg.msg_flags = MSG_DONTWAIT | MSG_NOSIGNAL;
-
-    iov.iov_base = message;
-    iov.iov_len  = packet_size;
-
-    iov_iter_init(&iov_iter, READ, &iov, 1, iov.iov_len);
-    msg.msg_iter = iov_iter;
 
     oldfs = get_fs();
     set_fs( KERNEL_DS );
@@ -127,6 +110,26 @@ static void setup_net(void) {
 	printk( KERN_ERR "server: Error creating clientsocket.\n" );
 	net_setup_ok = FALSE;
     }
+
+
+    memset(&msg, 0, sizeof(msg));
+
+
+    destination.sin_family = AF_INET;
+    destination.sin_addr.s_addr = remote_addr; 
+    destination.sin_port = htons(remote_port);
+
+    msg.msg_name = &destination;
+    msg.msg_namelen = sizeof(destination);
+    msg.msg_flags = MSG_DONTWAIT | MSG_NOSIGNAL;
+
+    iov.iov_base = message;
+    iov.iov_len  = packet_size;
+
+    iov_iter_init(&iov_iter, READ, &iov, 1, iov.iov_len);
+    msg.msg_iter = iov_iter;
+
+
 
     net_setup_ok = TRUE;
 
