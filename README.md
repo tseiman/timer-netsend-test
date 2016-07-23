@@ -311,7 +311,9 @@ As an example the implementations can perform following tests:
 The next 3 sections describe the different implementations which have been prepared:
 ### Userspace process only test
 For maximum performance test (= 512 byte packets per second maximum) the "userspace/timer-userspace-only" program can be started in an root context with the following command:
+```bash
     ~/work/timer-netsend-test/userspace# ./timer-netsend-userspace-only -s 0 -n 1000
+```
 1000 Nano seconds are the minimum sleep time - otherwise the system might be overloaded.
 The maximum achivable packet rate can be observed by using "ecp3-ethtest-statreader.pl", the CPU utilisation can be recorded by using "poll_cpustatus.pl".
 
@@ -353,9 +355,13 @@ For maximum performance test (= 512 byte packets per second maximum) the "usersp
     ~/work/timer-netsend-test/userspace# ./timer-netsend-userspace-only -s 0 -n 1000
 1000 Nano seconds are the minimum sleep time - otherwise the system might be overloaded.
 The process PID need to be determined by using top command or similar. A cpu set need to be created by using command (one CPU will be reserved and no process will run on it):
+```bash
     cset shield -c 1
+```
 The process of "timer-netsend-userspace-only" need to be transfered to this CPUSet by using command:
+```bash
     cset shield -s -p  <PID>
+```
 where <PID> has to be substituted by the actual PID from the "timer-netsend-userspace-only" process. The userspace process runs now isolated on an own CPU
 The maximum achivable packet rate can be observed by using "ecp3-ethtest-statreader.pl", the CPU utilisation can be recorded by using "poll_cpustatus.pl".
 
@@ -368,7 +374,9 @@ The effective CPU utilisation can be recorded by using "poll_cpustatus.pl".
 The data from CPU utilisation observation and the minimum, average and maximum inter packet delay will show the relation of CPU utilisation and ability to schedule packets for sending.
 
 The CPUSet can be removed by giving 
+```bash
     cset shield --reset
+```
 command.
 
 ## Setting up test processes on the tested plattform
