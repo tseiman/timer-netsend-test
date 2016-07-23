@@ -27,6 +27,11 @@ This document is not complete yet. some passages are marked with "TBC"="To be Co
   + [Folder "tools"] (#folder-tools)
     - [stress-ng] (#stress-ng)
 - [Setting up ETH Interface] (#setting-up-eth-interface)
+- [Test description] (#test-description)
+    + [Userspace process only test] (#userspace-process-only-test)
+    + [Userspace sender process triggered by kernel] (#userspace-sender-process-triggered-by-kernel)
+    + [Kernel module realtime scheduling and packet sending] (#kernel-module-realtime-scheduling-and-packet-sending)
+    + [CPU sets with userspace process] (#cpu-sets-with-userspace-process)
 - [Setting up test processes on the tested plattform] (#setting-up-test-processes-on-the-tested-plattform)
 - [Setting up load for tested plattform] (#setting-up-load-for-tested-plattform)
 - [FPGA board meassurment description] (#fpga-board-meassurment-description)
@@ -296,6 +301,75 @@ to keep compatibility with the scripts.
     ~> arp -s 1.1.1.2 01:02:03:04:05:06
 
 
+## Test description
+A number of scenarios can be performed with this testsuite to observe the behavior of a linux system when sending network packets in 
+relation to the system CPU utilisation and disclose the impact of different implementations.
+As an example the implementations can perform following tests:
+- Maximum achivable packet rate in relation to CPU utilisation
+- Impact of CPU Utilisation to the network sending performance
+
+The next 3 sections describe the different implementations which have been prepared:
+### Userspace process only test
+For maximum performance test (= 512 byte packets per second maximum) the "userspace/timer-userspace-only" program can be started in an root context with the following command:
+    ~/work/timer-netsend-test/userspace# ./timer-netsend-userspace-only -s 0 -n 1000
+1000 Nano seconds are the minimum sleep time - otherwise the system might be overloaded.
+The maximum achivable packet rate can be observed by using "ecp3-ethtest-statreader.pl", the CPU utilisation can be recorded by using "poll_cpustatus.pl".
+
+For testing the dependency of CPU utilisation to packet send rate the script "scripts/cpu_stress_control.sh" is started without parameters in parallel to the 
+"userspace/timer-userspace-only" program. The sleep time might be selected for one case that a very low packet rate is send (eg. 5pps) and for a second case the 
+maximum packet rate is send. The minimum, average and maximum inter packet delay can be observed with the "ecp3-ethtest-statreader.pl" script. 
+The effective CPU utilisation can be recorded by using "poll_cpustatus.pl".
+The data from CPU utilisation observation and the minimum, average and maximum inter packet delay will show the relation of CPU utilisation and ability to schedule packets for sending.
+
+### Userspace sender process triggered by kernel
+For maximum performance test (= 512 byte packets per second maximum) the kernel module "timer-netsend-test-signal-mod" need to be loaded and the 
+program "userspace/timer-kernel-to-userspace" has to be started. The kernel module need to be configured over the proc file system to run with 0 seconds and 1000 nano seconds sleep.
+1000 Nano seconds are the minimum sleep time - otherwise the system might be overloaded.
+The maximum achivable packet rate can be observed by using "ecp3-ethtest-statreader.pl", the CPU utilisation can be recorded by using "poll_cpustatus.pl".
+
+For testing the dependency of CPU utilisation to packet send rate the script "scripts/cpu_stress_control.sh" is started without parameters in parallel to the 
+kernel module "timer-netsend-test-signal-mod" and the "userspace/timer-kernel-to-userspace" program.
+The sleep time might be selected for one case that a very low packet rate is send (eg. 5pps) and for a second case the 
+maximum packet rate is send. The minimum, average and maximum inter packet delay can be observed with the "ecp3-ethtest-statreader.pl" script. 
+The effective CPU utilisation can be recorded by using "poll_cpustatus.pl".
+The data from CPU utilisation observation and the minimum, average and maximum inter packet delay will show the relation of CPU utilisation and ability to schedule packets for sending.
+
+
+### Kernel module realtime scheduling and packet sending
+For maximum performance test (= 512 byte packets per second maximum) the kernel module "timer-netsend-test-udp-sock-thread-mod" need to be loaded and
+configured over the proc file system to run with 1 micro second sleep.
+The maximum achivable packet rate can be observed by using "ecp3-ethtest-statreader.pl", the CPU utilisation can be recorded by using "poll_cpustatus.pl".
+
+For testing the dependency of CPU utilisation to packet send rate the script "scripts/cpu_stress_control.sh" is started without parameters in parallel to the 
+kernel module "timer-netsend-test-udp-sock-thread-mod".
+The sleep time might be selected for one case that a very low packet rate is send (eg. 5pps) and for a second case the 
+maximum packet rate is send. The minimum, average and maximum inter packet delay can be observed with the "ecp3-ethtest-statreader.pl" script. 
+The effective CPU utilisation can be recorded by using "poll_cpustatus.pl".
+The data from CPU utilisation observation and the minimum, average and maximum inter packet delay will show the relation of CPU utilisation and ability to schedule packets for sending.
+
+
+### CPU sets with userspace process
+For maximum performance test (= 512 byte packets per second maximum) the "userspace/timer-userspace-only" program can be started in an root context with the following command:
+    ~/work/timer-netsend-test/userspace# ./timer-netsend-userspace-only -s 0 -n 1000
+1000 Nano seconds are the minimum sleep time - otherwise the system might be overloaded.
+The process PID need to be determined by using top command or similar. A cpu set need to be created by using command (one CPU will be reserved and no process will run on it):
+    cset shield -c 1
+The process of "timer-netsend-userspace-only" need to be transfered to this CPUSet by using command:
+    cset shield -s -p  <PID>
+where <PID> has to be substituted by the actual PID from the "timer-netsend-userspace-only" process. The userspace process runs now isolated on an own CPU
+The maximum achivable packet rate can be observed by using "ecp3-ethtest-statreader.pl", the CPU utilisation can be recorded by using "poll_cpustatus.pl".
+
+For testing the dependency of CPU utilisation to packet send rate the script "scripts/cpu_stress_control.sh" is started without parameters in parallel to the 
+"userspace/timer-userspace-only" program. The sleep time might be selected for one case that a very low packet rate is send (eg. 5pps) and for a second case the 
+maximum packet rate is send. 
+The CPUSet creation and the transfer of the process needs to be performaed as descibed above.
+The minimum, average and maximum inter packet delay can be observed with the "ecp3-ethtest-statreader.pl" script. 
+The effective CPU utilisation can be recorded by using "poll_cpustatus.pl".
+The data from CPU utilisation observation and the minimum, average and maximum inter packet delay will show the relation of CPU utilisation and ability to schedule packets for sending.
+
+The CPUSet can be removed by giving 
+    cset shield --reset
+command.
 
 ## Setting up test processes on the tested plattform
  TBD
@@ -316,4 +390,10 @@ to keep compatibility with the scripts.
  
  
  
+
+## Test description
+### Userspace process only test
+### Userspace sender process triggered by kernel
+### Kernel module realtime scheduling and packet sending
+### CPU sets with userspace process
   
