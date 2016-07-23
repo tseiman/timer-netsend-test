@@ -362,7 +362,7 @@ The process of "timer-netsend-userspace-only" need to be transfered to this CPUS
 ```bash
     cset shield -s -p  <PID>
 ```
-where <PID> has to be substituted by the actual PID from the "timer-netsend-userspace-only" process. The userspace process runs now isolated on an own CPU
+where &lt;PID&gt; has to be substituted by the actual PID from the "timer-netsend-userspace-only" process. The userspace process runs now isolated on an own CPU
 The maximum achivable packet rate can be observed by using "ecp3-ethtest-statreader.pl", the CPU utilisation can be recorded by using "poll_cpustatus.pl".
 
 For testing the dependency of CPU utilisation to packet send rate the script "scripts/cpu_stress_control.sh" is started without parameters in parallel to the 
