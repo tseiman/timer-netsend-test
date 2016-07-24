@@ -404,9 +404,4 @@ command.
  
  
 
-## Test description
-### Userspace process only test
-### Userspace sender process triggered by kernel
-### Kernel module realtime scheduling and packet sending
-### CPU sets with userspace process
   
