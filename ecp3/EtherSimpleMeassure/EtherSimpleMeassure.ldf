@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BaliProject version="3.2" title="EtherSimpleMeassure" device="LFE3-35EA-8FN484C" default_implementation="impl1">
+    <Options/>
+    <Implementation title="impl1" dir="impl1" description="impl1" synthesis="synplify" default_strategy="timing_versa">
+        <Options def_top="top"/>
+        <Source name="impl1/src/clock_manager.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/src/gmii.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/src/UART_Send.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/src/ether_simple_meassure_top.v" type="Verilog" type_short="Verilog">
+            <Options top_module="top"/>
+        </Source>
+        <Source name="EtherSimpleMeassure.lpf" type="Logic Preference" type_short="LPF">
+            <Options/>
+        </Source>
+        <Source name="impl1/impl1.xcf" type="Programming Project File" type_short="Programming" excluded="TRUE">
+            <Options/>
+        </Source>
+        <Source name="impl1/jtag_fast_programming.xcf" type="Programming Project File" type_short="Programming" excluded="TRUE">
+            <Options/>
+        </Source>
+        <Source name="impl1/ssi_flash_programming.xcf" type="Programming Project File" type_short="Programming">
+            <Options/>
+        </Source>
+    </Implementation>
+    <Strategy name="Strategy1" file="SimpleSend51.sty"/>
+    <Strategy name="timing_versa" file="timing_versa.sty"/>
+</BaliProject>

@@ -1,0 +1,130 @@
+rvl_alias "clock" "clock";
+COMMERCIAL ;
+BLOCK RESETPATHS ;
+BLOCK ASYNCPATHS ;
+BANK 0 VCCIO 1.5 V;
+BANK 1 VCCIO 2.5 V;
+BANK 2 VCCIO 3.3 V;
+BANK 3 VCCIO 3.3 V;
+BANK 6 VCCIO 2.5 V;
+BANK 7 VCCIO 2.5 V;
+SYSCONFIG PERSISTENT=OFF CONFIG_MODE=SPI DONE_EX=OFF MCCLK_FREQ=20 CONFIG_SECURE=OFF WAKE_UP=21 WAKE_ON_LOCK=OFF COMPRESS_CONFIG=OFF ENABLE_NDR=OFF CONFIG_IOVOLTAGE=3.3 ;
+LOCATE COMP "reset_n" SITE "A21" ;
+LOCATE COMP "clock" SITE "L5" ;#100Mhz LVDS clock
+LOCATE COMP "phy1_rst_n" SITE "L3" ;
+LOCATE COMP "phy1_125M_clk" SITE "T3" ;// 125 MHz
+############################################################
+#
+#
+# ETHERNET/MAC SIGNALS
+#
+#
+############################################################
+LOCATE COMP "phy1_gtx_clk" SITE "M2" ;
+LOCATE COMP "phy1_rx_clk" SITE "L4" ;
+LOCATE COMP "phy1_rx_data[0]" SITE "M5" ;
+LOCATE COMP "phy1_rx_data[1]" SITE "N1" ;
+LOCATE COMP "phy1_rx_data[2]" SITE "N6" ;
+LOCATE COMP "phy1_rx_data[3]" SITE "P6" ;
+LOCATE COMP "phy1_rx_data[4]" SITE "T2" ;
+LOCATE COMP "phy1_rx_data[5]" SITE "R2" ;
+LOCATE COMP "phy1_rx_data[6]" SITE "P5" ;
+LOCATE COMP "phy1_rx_data[7]" SITE "P3" ;
+LOCATE COMP "phy1_rx_dv" SITE "M1" ;
+#LOCATE COMP "phy1_rx_er" SITE "M4" ;#Rx PCS
+#LOCATE COMP "phy1_col" SITE "R1" ;
+#LOCATE COMP "phy1_crs" SITE "P4" ;
+LOCATE COMP "phy1_tx_clk" SITE "C12" ;
+LOCATE COMP "phy1_tx_data[0]" SITE "V1" ;
+LOCATE COMP "phy1_tx_data[1]" SITE "U1" ;
+LOCATE COMP "phy1_tx_data[2]" SITE "R3" ;
+LOCATE COMP "phy1_tx_data[3]" SITE "P1" ;
+LOCATE COMP "phy1_tx_data[4]" SITE "N5" ;
+LOCATE COMP "phy1_tx_data[5]" SITE "N3" ;
+LOCATE COMP "phy1_tx_data[6]" SITE "N4" ;
+LOCATE COMP "phy1_tx_data[7]" SITE "N2" ;
+LOCATE COMP "phy1_tx_en" SITE "V3" ;
+LOCATE COMP "phy1_mii_data" SITE "L2" ;
+LOCATE COMP "phy1_mii_clk" SITE "V4" ;
+IOBUF PORT "phy1_mii_data" IO_TYPE=LVCMOS25 SLEWRATE=FAST ;
+IOBUF PORT "phy1_mii_clk" IO_TYPE=LVCMOS25 SLEWRATE=FAST ;
+###########################################################
+#  TEST POINTS
+#  (not used)
+# These are assinged to the expansion connector pins
+############################################################
+LOCATE COMP "TEST_phy_tx_data[0]" SITE "B11" ;
+LOCATE COMP "TEST_phy_tx_data[1]" SITE "B12" ;
+LOCATE COMP "TEST_phy_tx_data[2]" SITE "A12" ;
+LOCATE COMP "TEST_phy_tx_data[3]" SITE "A13" ;
+LOCATE COMP "TEST_phy_tx_data[4]" SITE "E12" ;
+LOCATE COMP "TEST_phy_tx_data[5]" SITE "E13" ;
+LOCATE COMP "TEST_phy_tx_data[6]" SITE "C13" ;
+LOCATE COMP "TEST_phy_tx_data[7]" SITE "C14" ;
+
+LOCATE COMP "TEST_phy_rx_data[0]" SITE "D13" ;
+LOCATE COMP "TEST_phy_rx_data[1]" SITE "D14" ;
+LOCATE COMP "TEST_phy_rx_data[2]" SITE "A14" ;
+LOCATE COMP "TEST_phy_rx_data[3]" SITE "B14" ;
+LOCATE COMP "TEST_phy_rx_data[4]" SITE "F13" ;
+LOCATE COMP "TEST_phy_rx_data[5]" SITE "F14" ;
+LOCATE COMP "TEST_phy_rx_data[6]" SITE "A15" ;
+LOCATE COMP "TEST_phy_rx_data[7]" SITE "B15" ;
+LOCATE COMP "TEST_phy_mii_data" SITE "D15" ;
+LOCATE COMP "TEST_phy_mii_clk" SITE "G15" ;
+LOCATE COMP "TEST_phy_rx_dv" SITE "A17" ;
+LOCATE COMP "TEST_phy_tx_clk" SITE "F16" ;
+LOCATE COMP "TEST_phy_125M_clk" SITE "A16" ;
+LOCATE COMP "TEST_phy_rx_er" SITE "F15" ;
+# UART
+LOCATE COMP "UART_rx" SITE "G19" ;  // from the FTDI chip
+LOCATE COMP "UART_tx" SITE "G20" ; // to the FTDI chip
+
+
+# Needed to configure the PHY
+IOBUF PORT "phy1_rx_data[0]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "phy1_rx_data[1]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "phy1_rx_data[2]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "phy1_rx_data[3]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "phy1_rx_data[4]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "phy1_rx_data[5]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "phy1_rx_data[6]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "phy1_rx_data[7]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "TEST_phy_rx_data[0]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "TEST_phy_rx_data[1]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "TEST_phy_rx_data[2]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "TEST_phy_rx_data[3]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "TEST_phy_rx_data[4]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "TEST_phy_rx_data[5]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "TEST_phy_rx_data[6]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "TEST_phy_rx_data[7]" IO_TYPE=LVCMOS25 PULLMODE=DOWN ;
+IOBUF PORT "TEST_phy_mii_data" IO_TYPE=LVCMOS25 ;
+############################################################
+#
+# 14 Segment LED GPIO SIGNALS
+#
+############################################################
+#LOCATE COMP "seg[0]" SITE "V6" ;
+#LOCATE COMP "seg[1]" SITE "U7" ;
+#LOCATE COMP "seg[2]" SITE "Y6" ;
+#LOCATE COMP "seg[3]" SITE "AA6" ;
+#LOCATE COMP "seg[4]" SITE "U8" ;
+#LOCATE COMP "seg[5]" SITE "T8" ;
+#LOCATE COMP "seg[6]" SITE "R9" ;
+#LOCATE COMP "seg[7]" SITE "T9" ;
+#LOCATE COMP "seg[8]" SITE "AB3" ;
+#LOCATE COMP "seg[9]" SITE "AB4" ;
+#LOCATE COMP "seg[10]" SITE "W4" ;
+#LOCATE COMP "seg[11]" SITE "Y5" ;
+#LOCATE COMP "seg[12]" SITE "AA4" ;
+#LOCATE COMP "seg[13]" SITE "AA5" ;
+#LOCATE COMP "seg[14]" SITE "W5" ;
+############################################################
+#
+# FREQUENCIES AND TIMING
+#
+############################################################
+#FREQUENCY PORT  "phy1_125M_clk" 125.00 MHz ;  // 125 MHz
+FREQUENCY PORT "clock" 100.000000 MHz ;
+
+BLOCK JTAGPATHS;

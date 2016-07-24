@@ -26,6 +26,7 @@ This document is not complete yet. some passages are marked with "TBC"="To be Co
     - [timer-netsend-test-udp-sock-thread-mod] (#timer-netsend-test-udp-sock-thread-mod)
   + [Folder "tools"] (#folder-tools)
     - [stress-ng] (#stress-ng)
+  + [Folder "ecp3"] (#folder-ecp3)
 - [Setting up ETH Interface] (#setting-up-eth-interface)
 - [Test description] (#test-description)
     + [Userspace process only test] (#userspace-process-only-test)
@@ -276,13 +277,15 @@ When this module is loaded, no other timer-netsend-test module should be loaded 
 
 
 ### Folder "tools":
+
     
 #### stress-ng
 this tool is used to utilize the CPU of the System Under Test (SUT) to test it's beahvior. The script "cpu_stress_control.sh"
 uses this tool. It is downloaded http://smackerelofopinion.blogspot.de/2014/06/stress-ng-updated-system-stress-test.html and copied here
 to keep compatibility with the scripts.
 
-
+### Folder "ecp3":
+This folder contains the the LatticeECP3 Versa Development Kit (see link "ECP3 Dev Kit") project for the Lattice Diamond suite (see link "Diamond").
 
 ## Setting up ETH Interface:
 
@@ -394,7 +397,9 @@ command.
  TBD
 
 ## Links
- http://www.falsig.org/simon/blog/2013/07/10/real-time-linux-kernel-drivers-part-3-the-better-implementation/
+- ECP3 Dev Kit http://www.latticesemi.com/ecp3versa
+- Lattice Diamond http://www.latticesemi.com/en/Products/DesignSoftwareAndIP/FPGAandLDS/LatticeDiamond.aspx
+- example realtime linux module scheduling  http://www.falsig.org/simon/blog/2013/07/10/real-time-linux-kernel-drivers-part-3-the-better-implementation/
  
  
  
