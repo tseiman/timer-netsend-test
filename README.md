@@ -37,6 +37,7 @@ This document is not complete yet. some passages are marked with "TBC"="To be Co
 - [Setting up load for tested plattform] (#setting-up-load-for-tested-plattform)
 - [FPGA board meassurment description] (#fpga-board-meassurment-description)
 - [FPGA board configuration] (#fpga-board-configuration)
+- [Canned XEN] (#canned-xen)
 - [Links] (#links)
 
 ============================================================
@@ -59,6 +60,7 @@ The Suite consist of following parts:
 - script & binary to generate CPU load
 - alternatively different approaches to generate network UDP traffic either purly in user space,  mixed user space and kernel space and pure kernel space, supposed to run on SUT.
 - scripts to generate graphs from the meassurements.
+- a bash script "canned-xen" which builds a live bootable ISO image with a runnable XEN Hypervisor and 2 guest systems
 
 ## Requires
 - gcc >4.0
@@ -396,11 +398,35 @@ command.
 ## FPGA board configuration
  TBD
 
+## Canned XEN
+Canned XEN is a bash script which will create a XEN live CD including 2 demo minimal linux guests. For that it will run
+various actions like mounting images, formatting those, populating them with files, compiling tools & kernel etc.
+The idea of Canned XEN is to get a reproduceable test environment for performance tests in virtual environments.
+
+Following actions might be taken:
+- Downloading actual Gentoo minimal live CD
+- mounting proc, sys, dev etc. to chroot(s)
+- download various tools and compile those
+- copy a lot of files arround
+- compile XEN and tools and add it to live cd
+- create 2 images for XEN HVA guests with a mini linux and add those as well
+- pack everything back to a bootable ISO image which you'll find finally in this folder
+
+to do all of that it will download arround 560MB from the internet using various sources 
+and run arround an hour massively depending on which system it runs on.
+
+to perform the build just run 
+    ~/timer-netsend-test/canned-xen$ ./createVM
+
+cleanup might be performed  with
+    ~/timer-netsend-test/canned-xen$ ./createVM clean
+
+
 ## Links
 - ECP3 Dev Kit http://www.latticesemi.com/ecp3versa
 - Lattice Diamond http://www.latticesemi.com/en/Products/DesignSoftwareAndIP/FPGAandLDS/LatticeDiamond.aspx
 - example realtime linux module scheduling  http://www.falsig.org/simon/blog/2013/07/10/real-time-linux-kernel-drivers-part-3-the-better-implementation/
- 
+- Gentoo.org (used in canned XEN) http://www.gentoo.org
  
  
 
