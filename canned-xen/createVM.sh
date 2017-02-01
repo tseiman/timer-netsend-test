@@ -113,6 +113,14 @@ unmount_all() {
 }
 
 if [ $# -ne 0 ]; then
+
+
+    if [ $1 == "help" ]; then
+	echo "createVM.sh [help|umount|clean|guestonly]"
+	exit
+    fi
+
+
     if [ $1 == "umount" ]; then
 	unmount_all
 	exit
@@ -459,6 +467,14 @@ if [ ! -e "${GUESTDIR}/canned-xen-guest1.img" ]; then
     echo_fail
     exit
 fi
+
+if [ $# -ne 0 ]; then
+    if [ $1 == "guestonly" ]; then
+	unmount_all
+	exit
+    fi
+fi
+
 pw_request_hint
 sudo rsync --info=progress2 -a  ${GUESTDIR}/canned-xen-guest1.img ${SQUASHFSWORK}/var/vms
 echo_ok
@@ -490,6 +506,30 @@ pw_request_hint
 sudo mv guest1.cfg ${SQUASHFSWORK}/
 
 echo $'
+name = "guest2"
+builder = "hvm"
+memory = "256"
+disk = [ \'file:/var/vms/canned-xen-guest2.img,hda,w\' ]
+vif = [ \'type=ioemu, mac=00:16:3e:09:f0:14, bridge=br0\' ]
+vnc=1
+vncunused=2
+keymap="de"
+apic=1
+acpi=1
+pae=1
+vcpus=1
+serial = "pty" # enable serial console
+on_reboot   = \'restart\'
+' >guest2.cfg
+#'
+pw_request_hint
+sudo mv guest2.cfg ${SQUASHFSWORK}/
+
+
+echo $'
+config_enp13s0="null"
+
+date
 bridge_br0="enp13s0"
 brctl_setfd_br0=0
 brctl_sethello_br0=0
@@ -527,6 +567,19 @@ pw_request_hint
 sudo mv changeconfig.py ${SQUASHFSWORK}/
 
 echo_ok
+
+echo_announce_n  "Adjusting  network symlinks"
+cd ${SQUASHFSWORK}/etc/conf.d
+ln -s net.lo net.br0
+cd - >/dev/null
+echo_ok
+
+
+echo_announce_n  "fixing xen logging path"
+mkdir -p ${SQUASHFSWORK}/var/log/xen
+echo_ok
+
+
 
 
 echo_announce_n  "clonig Kconfig Library to \"${SQUASHFSWORK}/usr/src\"... "
@@ -568,6 +621,9 @@ rc-update add xendomains default
 rc-update add xenstored default
 rc-update add xen-watchdog default
 rc-update add sshd default
+rc-update add ntp-client default
+rc-update add ntpd default
+rc-update add net.br0 default
 rc-config delete pwgen
 echo root:password | chpasswd
 mv /guest1.cfg /etc/xen/
