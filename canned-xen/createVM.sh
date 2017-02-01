@@ -1,91 +1,66 @@
 #!/bin/bash
 
+echo
+echo " *********************************************************************"
+echo " *                                                                   *"
+echo " *  CANNED XEN                                                       *"
+echo " *  Hypervisor demonstration live CD creation script                 *"
+echo " *  2017 T.Schmidt                                                   *"
+echo " *                                                                   *"
+echo " *  Please note - this is a script which will create a XEN live CD   *"
+echo " *  including 2 demo minimal linux guests. For that it will run      *"
+echo " *  various actions like mounting images, formatting those,          *"
+echo " *  populating them with files, compiling tools & kernel etc. -      *"
+echo " *  partially in chroot environment.                                 *"
+echo " *                                                                   *"
+echo " *  Following actions might be taken:                                *"
+echo " *     - Downloading actual Gentoo minimal live CD                   *"
+echo " *     - mounting proc, sys, dev etc. to chroot(s)                   *"
+echo " *     - download various tools and compile those                    *"
+echo " *     - copy a lot of files arround                                 *"
+echo " *     - compile XEN and tools and add it to live cd                 *"
+echo " *     - create 2 images for XEN HVA guests with a mini linux        *"
+echo " *       and add those as well                                       *"
+echo " *     - pack everything back to a bootable ISO image which you'll   *"
+echo " *       find finally in this folder                                 *"
+echo " *                                                                   *"
+echo " *  to do all of that it will download arround 560MB from the        *"
+echo " *  internet using various sources and run arround an hour           *"
+echo " *  massively depending on which system it runs on.                  *"
+echo " *                                                                   *"
+echo " *    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   *"
+echo " *    !! Please note - don't interrupt the script while it is   !!   *"
+echo " *    !! running - this might cause unforseen incidents e.g.    !!   *"
+echo " *    !! commands which are not running in chroot anymore or    !!   *"
+echo " *    !! not cleanly unmounted filesystems                      !!   *"
+echo " *    !!                                                        !!   *"
+echo " *    !! please be prepared to enter your sudo passsword        !!   *"
+echo " *    !! several times,  beeing sudoer is basic requirement     !!   *"
+echo " *    !!                                                        !!   *"
+echo " *    !! THIS IS EXPERIMENTAL, USE ON OWN RISK                  !!   *"
+echo " *    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   *"
+echo " *                                                                   *"
+echo " *  In case you disagree with those points Hit CTRL-C now !          *"
+echo " *  otherwise hit any other key to continue...                       *"
+echo " *                                                                   *"
+echo " *********************************************************************"
+echo
+read
 
-WORKDIR="vmassemble"
-DOWNLOADDIR="downloads"
-GENTOO_LIVE_URL_INDEX="http://distfiles.gentoo.org/releases/amd64/autobuilds/current-install-amd64-minimal/"
-REQUIREDPROGRAMS="wget rsync uname sed grep mount sudo unsquashfs rm gunzip cpio xz chmod chroot mksquashfs find mkisofs awk nasm kpartx git"
-ISOMNT="isomnt"
-ISONEW_DOM0="gentoo-live-dom0-`date +%Y%m%d`.iso"
-SQUASHFSWORK="squashfswork"
-SQUASHFSMNT="squashfsmnt"
-SQUASHFILE="image.squashfs"
-INITRDWORK="initrdwork"
-INITRDORIGFILE="${WORKDIR}/isolinux/gentoo.igz"
-SYSLINUX_URL_INDEX="https://www.kernel.org/pub/linux/utils/boot/syslinux"
-CLEAN_LIST="var/tmp/* 
-var/run/*
-var/lock/*
-var/cache/*
-var/db/*
-tmp/*
-var/log/*
-root/.bash_history
-usr/portage/*
-etc/portage/*
-usr/share/doc/*
-usr/src/*"
-GUESTDIR="./"
+LOCALDIR_SOURCE="${BASH_SOURCE[0]}"
+while [ -h "${LOCALDIR_SOURCE}" ]; do # resolve $LOCALDIR_SOURCE until the file is no longer a symlink
+  LOCALDIR_DIR="$( cd -P "$( dirname "${LOCALDIR_SOURCE}" )" && pwd )"
+  LOCALDIR_SOURCE="$(readlink "${LOCALDIR_SOURCE}")"
+  [[ ${LOCALDIR_SOURCE} != /* ]] && LOCALDIR_SOURCE="${LOCALDIR_DIR}/${LOCALDIR_SOURCE}" # if $LOCALDIR_SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+LOCALDIR_DIR="$( cd -P "$( dirname "${LOCALDIR_SOURCE}" )" && pwd )"
 
-SETCOLOR_STATUS_OK="echo -en \\033[1;32m"
-SETCOLOR_STATUS_UNKNOWN="echo -en \\033[1;33m"
-SETCOLOR_STATUS_FAIL="echo -en \\033[1;31m"
-SETCOLOR_HEAD="echo -en \\033[1;37m"
-SETCOLOR_NORMAL="echo -en \\033[0;39m"
-
-echo_announce() {
-    echo_announce_n "$1"
-    echo  "   ===="
-    return 0
-}
-
-echo_announce_n() {
-    echo -ne '\033]0;createVM.sh | ' "${1}" '\007'
-    echo -n "====   "
-    $SETCOLOR_HEAD
-    echo -n "$1"
-    $SETCOLOR_NORMAL
-    return 0
-}
-
-echo_ok() {
-    echo -n "  [ "
-    $SETCOLOR_STATUS_OK
-    echo -n "OK"
-    $SETCOLOR_NORMAL
-    echo  " ]"
-    return 0
-}
-
-echo_fail() {
-    echo -n "  [ "
-    $SETCOLOR_STATUS_FAIL
-    echo -n "ERR"
-    $SETCOLOR_NORMAL
-    echo  " ]"
-    return 0
-}
-
-echo_unknown() {
-    echo -n "  [ "
-    $SETCOLOR_STATUS_UNKNOWN
-    echo -n "???"
-    $SETCOLOR_NORMAL
-    echo  " ]"
-    return 0
-}
+. ${LOCALDIR_DIR}/config.sh
+. ${LOCALDIR_DIR}/commons.sh
 
 
-pw_request_hint() {
-    if ! sudo -n true 2>/dev/null; then 
-	$SETCOLOR_STATUS_FAIL
-	echo -n "Password required:"
-	$SETCOLOR_NORMAL
-	echo 
-    fi
 
-    return 0
-}
+
 
 
 unmount_all() {
@@ -147,7 +122,7 @@ if [ $# -ne 0 ]; then
 	unmount_all 2>&1>/dev/null
 	sudo rm -Rf boot
 	sudo rm -Rf busybox-1.26.2
-	sudo rm -Rf canned-xen-guest1.img
+	sudo rm -Rf canned-xen-guest*.img
 	sudo rm -Rf downloads
 	sudo rm -Rf dropbear-2016.74
 	sudo rm -Rf gentoo.i
@@ -168,53 +143,6 @@ if [ $# -ne 0 ]; then
 
 fi
 
-echo
-echo " *********************************************************************"
-echo " *                                                                   *"
-echo " *  CANNED XEN                                                       *"
-echo " *  Hypervisor demonstration live CD creation script                 *"
-echo " *  2017 T.Schmidt                                                   *"
-echo " *                                                                   *"
-echo " *  Please note - this is a script which will create a XEN live CD   *"
-echo " *  including 2 demo minimal linux guests. For that it will run      *"
-echo " *  various actions like mounting images, formatting those,          *"
-echo " *  populating them with files, compiling tools & kernel etc. -      *"
-echo " *  partially in chroot environment.                                 *"
-echo " *                                                                   *"
-echo " *  Following actions might be taken:                                *"
-echo " *     - Downloading actual Gentoo minimal live CD                   *"
-echo " *     - mounting proc, sys, dev etc. to chroot(s)                   *"
-echo " *     - download various tools and compile those                    *"
-echo " *     - copy a lot of files arround                                 *"
-echo " *     - compile XEN and tools and add it to live cd                 *"
-echo " *     - create 2 images for XEN HVA guests with a mini linux        *"
-echo " *       and add those as well                                       *"
-echo " *     - pack everything back to a bootable ISO image which you'll   *"
-echo " *       find finally in this folder                                 *"
-echo " *                                                                   *"
-echo " *  to do all of that it will download arround 560MB from the        *"
-echo " *  internet using various sources and run arround an hour           *"
-echo " *  massively depending on which system it runs on.                  *"
-echo " *                                                                   *"
-echo " *    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   *"
-echo " *    !! Please note - don't interrupt the script while it is   !!   *"
-echo " *    !! running - this might cause unforseen incidents e.g.    !!   *"
-echo " *    !! commands which are not running in chroot anymore or    !!   *"
-echo " *    !! not cleanly unmounted filesystems                      !!   *"
-echo " *    !!                                                        !!   *"
-echo " *    !! please be prepared to enter your sudo passsword        !!   *"
-echo " *    !! several times,  beeing sudoer is basic requirement     !!   *"
-echo " *    !!                                                        !!   *"
-echo " *    !! THIS IS EXPERIMENTAL, USE ON OWN RISK                  !!   *"
-echo " *    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   *"
-echo " *                                                                   *"
-echo " *  In case you disagree with those points Hit CTRL-C now !          *"
-echo " *  otherwise hit any other key to continue...                       *"
-echo " *                                                                   *"
-echo " *********************************************************************"
-echo
-read
-
 
 echo_announce "checking required executables available... "
 for PROG in ${REQUIREDPROGRAMS}; do
@@ -233,63 +161,15 @@ else
 fi
 
 
-echo_announce_n "creating workdir \"${WORKDIR}\"... "
-if [ -d ${WORKDIR} ]; then
-#    echo
-    echo -n "   Working directory \"${WORKDIR}\" exists already"
-    echo_unknown
-#    echo "   clean or rename it before run again, exiting for now."
-#    exit
-else
-    mkdir ${WORKDIR}
-    echo_ok
-fi
-
-echo_announce_n  "creating download dir \"${DOWNLOADDIR}\"... "
-if [ ! -d ${DOWNLOADDIR} ]; then
-    mkdir ${DOWNLOADDIR}
-    echo_ok
-else
-    echo -n "OK - was existing already."
-    echo_unknown
-fi
-
-echo_announce_n "creating ISO mount dir \"${ISOMNT}\"... "
-if [ ! -d ${ISOMNT} ]; then
-    mkdir ${ISOMNT}
-    echo_ok
-else
-    echo -n "OK - was existing already."
-    echo_unknown
-fi
+create_dir "${DOM0_WORKDIR}" "Working"
+create_dir "${DOWNLOADDIR}" "Download"
+create_dir "${ISOMNT}" "ISO mount"
+create_dir "${SQUASHFSWORK}" "SquashFS work"
+create_dir "${SQUASHFSMNT}" "SquashFS mount"
+create_dir "${INITRDWORK}" "InitRD work"
+create_dir "${DISTCACHE}" "Portage Distfile cache"
 
 
-echo_announce_n "creating squash-fs work dir \"${SQUASHFSWORK}\"... "
-if [ ! -d ${SQUASHFSWORK} ]; then
-    mkdir ${SQUASHFSWORK}
-    echo_ok
-else
-    echo -n "OK - was existing already."
-    echo_unknown
-fi
-
-echo_announce_n "creating squash-fs mount dir \"${SQUASHFSMNT}\"... "
-if [ ! -d ${SQUASHFSMNT} ]; then
-    mkdir ${SQUASHFSMNT}
-    echo_ok
-else
-    echo -n "OK - was existing already."
-    echo_unknown
-fi
-
-echo_announce_n "creating init-rd work dir \"${INITRDWORK}\"... "
-if [ ! -d ${INITRDWORK} ]; then
-    mkdir ${INITRDWORK}
-    echo_ok
-else
-    echo -n "OK - was existing already."
-    echo_unknown
-fi
 
 echo_announce  "getting ISO download file name from \"${GENTOO_LIVE_URL_INDEX}\"... "
 if ! wget -o wget.log "${GENTOO_LIVE_URL_INDEX}?C=M;O=A;F=0;P=install-amd64*.iso"; then
@@ -402,15 +282,15 @@ pw_request_hint
 sudo mount -o loop ${DOWNLOADDIR}/${GENTOO_MINIMAL_URL##*/} ${ISOMNT}
 echo_ok
 
-echo_announce  "copy files from  \"${ISOMNT}\" to \"${WORKDIR}\"... "
+echo_announce  "copy files from  \"${ISOMNT}\" to \"${DOM0_WORKDIR}\"... "
 pw_request_hint
-sudo rsync --info=progress2 -a ${ISOMNT}/* ${WORKDIR}
+sudo rsync --info=progress2 -a ${ISOMNT}/* ${DOM0_WORKDIR}
 echo_ok
 
 
 echo_announce_n  "extracting squashfs from \"${SQUASHFILE}\"... "
 pw_request_hint
-sudo unsquashfs -f -d ${SQUASHFSMNT} ${WORKDIR}/${SQUASHFILE}
+sudo unsquashfs -f -d ${SQUASHFSMNT} ${DOM0_WORKDIR}/${SQUASHFILE}
 echo_ok
 
 echo_announce_n  "copy squashfs from \"${SQUASHFSMNT}\" to \"${SQUASHFSWORK}\"... "
@@ -442,6 +322,15 @@ cd -
 echo_ok
 
 
+echo_announce "copy portage distfiles if avialable ... "
+if [ -d ${DISTCACHE}/ ]; then
+    pw_request_hint
+    sudo rsync --info=progress2 -a  ${DISTCACHE}/* ${SQUASHFSWORK}/usr/portage/distfiles/
+    echo_ok
+else
+    echo "No distcache \"${DISTCACHE}\" available"
+    echo_unknown
+fi
 
 echo_announce_n  "mount dev, sys and proc  ... "
 cd ${SQUASHFSWORK}
@@ -707,10 +596,10 @@ echo_announce_n "updating \"${INITRDWORK}\" with new modules ... "
 	sudo rsync --info=progress2 -a  ${SQUASHFSWORK}/lib/modules/* ${INITRDWORK}/lib/modules/
 echo_ok
 
-echo_announce_n "updating \"${WORKDIR}/isolinux\" with new KERNEL ... "
+echo_announce_n "updating \"${DOM0_WORKDIR}/isolinux\" with new KERNEL ... "
 	pw_request_hint
-	sudo rm -f ${WORKDIR}/isolinux/gentoo
-	sudo cp -a ${SQUASHFSWORK}/usr/src/linux/arch/x86/boot/bzImage ${WORKDIR}/isolinux/gentoo
+	sudo rm -f ${DOM0_WORKDIR}/isolinux/gentoo
+	sudo cp -a ${SQUASHFSWORK}/usr/src/linux/arch/x86/boot/bzImage ${DOM0_WORKDIR}/isolinux/gentoo
 echo_ok
 
 
@@ -719,7 +608,7 @@ echo_announce_n "updating isolinux ... "
 
 for FILE in `ls -1 ${SQUASHFSWORK}/boot/xen*.gz`; do 
     if [ ! -L ${FILE} ]; then 
-	sudo rsync --info=progress2 -a  ${FILE} ${WORKDIR}/isolinux/xen.gz
+	sudo rsync --info=progress2 -a  ${FILE} ${DOM0_WORKDIR}/isolinux/xen.gz
     fi
 done
 
@@ -755,16 +644,19 @@ label localhost
   MENU HIDE
 ' >isolinux.cfg
 pw_request_hint
-sudo mv isolinux.cfg ${WORKDIR}/isolinux/
-sudo rsync --info=progress2 -a  syslinux-*/bios/core/isolinux.bin ${WORKDIR}/isolinux/
-sudo rsync --info=progress2 -a  syslinux-*/bios/com32/elflink/ldlinux/ldlinux.c32 ${WORKDIR}/isolinux/
-sudo rsync --info=progress2 -a  syslinux-*/bios/com32/lib/libcom32.c32 ${WORKDIR}/isolinux/
-sudo rsync --info=progress2 -a  syslinux-*/bios/com32/libutil/libutil.c32 ${WORKDIR}/isolinux/
-sudo rsync --info=progress2 -a  syslinux-*/bios/com32/mboot/mboot.c32 ${WORKDIR}/isolinux/
-sudo rsync --info=progress2 -a  syslinux-*/bios/com32/menu/menu.c32 ${WORKDIR}/isolinux/
-
-
+sudo mv isolinux.cfg ${DOM0_WORKDIR}/isolinux/
+sudo rsync --info=progress2 -a  syslinux-*/bios/core/isolinux.bin ${DOM0_WORKDIR}/isolinux/
+sudo rsync --info=progress2 -a  syslinux-*/bios/com32/elflink/ldlinux/ldlinux.c32 ${DOM0_WORKDIR}/isolinux/
+sudo rsync --info=progress2 -a  syslinux-*/bios/com32/lib/libcom32.c32 ${DOM0_WORKDIR}/isolinux/
+sudo rsync --info=progress2 -a  syslinux-*/bios/com32/libutil/libutil.c32 ${DOM0_WORKDIR}/isolinux/
+sudo rsync --info=progress2 -a  syslinux-*/bios/com32/mboot/mboot.c32 ${DOM0_WORKDIR}/isolinux/
+sudo rsync --info=progress2 -a  syslinux-*/bios/com32/menu/menu.c32 ${DOM0_WORKDIR}/isolinux/
 echo_ok
+
+echo_announce "caching distfiles for next run files... "
+    rsync --info=progress2 -a  ${SQUASHFSWORK}/usr/portage/distfiles/* ${DISTCACHE}/
+echo_ok
+
 
 echo_announce_n "cleaning unnessesary files... "
 pw_request_hint
@@ -776,8 +668,8 @@ echo_ok
 
 echo_announce_n "generating new squashfs... "
 pw_request_hint
-sudo rm -f ${WORKDIR}/${SQUASHFILE}
-sudo mksquashfs ${SQUASHFSWORK}/  ${WORKDIR}/${SQUASHFILE}
+sudo rm -f ${DOM0_WORKDIR}/${SQUASHFILE}
+sudo mksquashfs ${SQUASHFSWORK}/  ${DOM0_WORKDIR}/${SQUASHFILE}
 echo_ok
 
 echo_announce_n "generating new initrd... "
@@ -789,7 +681,7 @@ cd -
 echo_ok
 
 echo_announce_n "generating final ISO image \"${ISONEW_DOM0}\" ... "
-cd ${WORKDIR}
+cd ${DOM0_WORKDIR}
 mkisofs -R -b isolinux/isolinux.bin -no-emul-boot -boot-load-size 4 -boot-info-table -c isolinux/boot.cat -iso-level 3 -o ../${ISONEW_DOM0} .
 cd -
 echo_ok
