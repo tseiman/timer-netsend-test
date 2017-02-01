@@ -23,7 +23,7 @@ download() {
     UNTARFILE=$7
     
     echo "downloading ${NAME} from \"${URL}${FILE}\"... "
-    if [ -e "${FILE##*/}" ]; then
+    if [ -e "downloads/${FILE##*/}" ]; then
 	echo "skipping download, file \"${FILE##*/}\" exists already in \"${DESTDIR}\" folder."
     else
 	wget -P downloads/ "${URL}${FILE}"
@@ -77,7 +77,7 @@ BUSYBOX_URL="`getLatestFileFromUrl "${BUSYBOX_URL_INDEX}" "busybox-*.tar.bz2" "b
 echo "got \"${BUSYBOX_URL}\"... OK"
 download "Busybox" "${BUSYBOX_URL_INDEX}" "${BUSYBOX_URL}" "downloads/" "busybox-*/*" "xjvf" "busybox-*.tar.bz2"
 
-if  ! ls downloads/busybox-*/busybox 1> /dev/null 2>&1; then
+if  ! ls busybox-*/busybox 1> /dev/null 2>&1; then
     echo "busybox compile"
     cd busybox-*
     rm -f .config
@@ -99,7 +99,7 @@ download "Dropbear" "${DROPBEAR_URL_INDEX}" "${DROPBEAR_URL}" "downloads/" "drop
 
 
 
-if  ! ls downloads/dropbear-*/dropbearmulti 1> /dev/null 2>&1; then
+if  ! ls dropbear-*/dropbearmulti 1> /dev/null 2>&1; then
     echo "dropbear compile"
     cd dropbear-*
     ./configure
@@ -108,7 +108,6 @@ if  ! ls downloads/dropbear-*/dropbearmulti 1> /dev/null 2>&1; then
 else 
     echo "dropbear has been already compiled"
 fi
-
 
 
 
@@ -202,7 +201,7 @@ sudo mount /dev/mapper/${LISTED_PARTITION_ROOT} guest-root
 
 echo "creating install script"
 echo $"#!/bin/ash
-rm -f /sbin/init
+# rm -f /sbin/init
 /bin/busybox --install -s
 echo "executing install.sh in chroot"
 " >install.sh
@@ -344,7 +343,11 @@ echo "root:x:0:" >guest-rootfs/etc/group
 cp -a /etc/services guest-rootfs/etc/
 
 echo "copy busybox binaries"
-cp -a busybox-*/busybox guest-rootfs/bin/
+if [ -e busybox-*/busybox ]; then
+    cp -a busybox-*/busybox guest-rootfs/bin/
+else
+    echo "   !!! NO BUSYBOX AVAILABLE !!! "
+fi
 
 echo "copy libnss libs"
 cp -a squashfswork/lib64/libnss_compat* guest-rootfs/lib/
@@ -362,8 +365,13 @@ cd -
 
 
 echo "copy dropbear ssh binaries"
-cp -a dropbear-*/dropbear guest-rootfs/sbin/
-cp -a dropbear-*/dropbearmulti guest-rootfs/sbin/
+if [ -e dropbear-*/dropbear ]; then
+    cp -a dropbear-*/dropbear guest-rootfs/sbin/
+elif [ -e dropbear-*/dropbearmulti ]; then
+    cp -a dropbear-*/dropbearmulti guest-rootfs/sbin/
+else
+    echo "   !!! NO DROPBEAR AVAILABLE !!! "
+fi
 cd guest-rootfs/sbin/
 ln -s dropbearmulti dropbearkey
 ln -s dropbearmulti dbclient

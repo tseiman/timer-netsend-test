@@ -92,21 +92,21 @@ unmount_all() {
     if [ -d ${SQUASHFSWORK} ]; then
         cd ${SQUASHFSWORK}
         pw_request_hint
-        sudo umount -l proc 2>&1>/dev/null
-        sudo umount -l sys 2>&1>/dev/null
-        sudo umount -l dev/pts 2>&1>/dev/null
-        sudo umount -l dev 2>&1>/dev/null
-        PWD="`pwd`"
-        grep ${PWD}/sys/kernel/debug /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
-        grep ${PWD}/sys/kernel/security /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
-        grep ${PWD}/sys/fs/cgroup/systemd /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
-        grep ${PWD}/sys/fs/cgroup /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
-        grep ${PWD}/sys/fs/fuse/connections /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
-        grep ${PWD}/sys/fs/pstore /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
-        grep ${PWD}/sys /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
-        grep ${PWD}/dev/pts /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
-        grep ${PWD}/dev /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
-        grep ${PWD}/proc /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
+        sudo umount -l -n proc 2>&1>/dev/null
+        sudo umount -l -n sys 2>&1>/dev/null
+        sudo umount -l -n dev/pts 2>&1>/dev/null
+        sudo umount -l -n dev 2>&1>/dev/null
+#        PWD="`pwd`"
+#        grep ${PWD}/sys/kernel/debug /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
+#        grep ${PWD}/sys/kernel/security /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
+#        grep ${PWD}/sys/fs/cgroup/systemd /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
+#        grep ${PWD}/sys/fs/cgroup /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
+#        grep ${PWD}/sys/fs/fuse/connections /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
+#        grep ${PWD}/sys/fs/pstore /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
+#        grep ${PWD}/sys /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
+#        grep ${PWD}/dev/pts /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
+#        grep ${PWD}/dev /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
+#        grep ${PWD}/proc /proc/mounts | cut -f2 -d" " | sort -r |  sudo xargs umount -n -l 2>&1>/dev/null
         cd -
     fi
     return 0
