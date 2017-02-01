@@ -15,10 +15,14 @@ all:	$(BIN)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 timer-netsend-kernel-to-userspace: timer-netsend-kernel-to-userspace.o
-	gcc -o $@ $^ $(CFLAGS)
+	$(CC) -o $@ $^ $(CFLAGS) 
+
+
+timer-netsend-userspace-only.o: timer-netsend-userspace-only.c
+	$(CC) -c -o $@ $< $(CFLAGS) -lrt -lpthread $(LDFLAGS)
 
 timer-netsend-userspace-only: timer-netsend-userspace-only.o
-	gcc -o $@ $^ $(CFLAGS) -lrt
+	$(CC) -o $@ $^ $(CFLAGS) -lrt -lpthread $(LDFLAGS)
 
 
 clean:

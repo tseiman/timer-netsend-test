@@ -83,7 +83,9 @@ if  ! ls busybox-*/busybox 1> /dev/null 2>&1; then
     rm -f .config
     make clean
     make defconfig
-    make -j4 LDFLAGS=-static
+    sed -e 's/.*CONFIG_STATIC.*/CONFIG_STATIC=y/' -i .config
+
+    LDFLAGS="--static" make -j4 
     cd -
 else 
     echo "busybox has been already compiled"
@@ -97,18 +99,38 @@ DROPBEAR_URL="`getLatestFileFromUrl "${DROPBEAR_URL_INDEX}" "dropbear-*.tar.bz2"
 echo "got \"${DROPBEAR_URL}\"... OK"
 download "Dropbear" "${DROPBEAR_URL_INDEX}" "${DROPBEAR_URL}" "downloads/" "dropbear-*/*" "xjvf" "dropbear-*.tar.bz2"
 
-
-
 if  ! ls dropbear-*/dropbearmulti 1> /dev/null 2>&1; then
     echo "dropbear compile"
     cd dropbear-*
     ./configure
-    make -j4 STATIC=1 MULTI=1
+    make -j4 PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" STATIC=1 MULTI=1
     cd -
 else 
     echo "dropbear has been already compiled"
 fi
 
+
+echo "build stress ng"
+if [ -d "../tools/stress-ng" ]; then
+    if [ ! -e "../tools/stress-ng/stress-ng" ]; then
+	cd ../tools/stress-ng/
+	make -j4
+	cd -
+    fi
+else
+    echo "Stress NG not available - will skip that, tool will not be part of guest images"
+fi
+
+echo "build UDP load test"
+if [ -d "../userspace" ]; then
+    if [ ! -e "../userspace/timer-netsend-userspace-only" ]; then
+	cd ../userspace
+	LDFLAGS="-lpthread --static" make -j4
+	cd -
+    fi
+else
+    echo "userspace test not available - will skip that, tool will not be part of guest images"
+fi
 
 
 
@@ -192,10 +214,10 @@ sudo kpartx -a canned-xen-guest1.img
 echo "formatting partions"
 sudo mkfs.ext2 /dev/mapper/${LISTED_PARTITION_BOOT}
 sudo mkfs.ext4 /dev/mapper/${LISTED_PARTITION_ROOT}
-mkdir guest-boot
+mkdir boot
 mkdir guest-root
 echo "mounting partions"
-sudo mount -text2 /dev/mapper/${LISTED_PARTITION_BOOT} guest-boot
+sudo mount -text2 /dev/mapper/${LISTED_PARTITION_BOOT} boot
 sudo mount /dev/mapper/${LISTED_PARTITION_ROOT} guest-root
 
 
@@ -279,6 +301,12 @@ fi
 good_msg "start ssh service" 0
 /bin/busybox inetd /etc/inetd.conf
 
+good_msg "seting clock via rdate" 0
+/usr/sbin/rdate -s 192.53.103.108
+
+good_msg "starting ntpd" 0
+/usr/sbin/ntpd -p 192.53.103.108
+
 good_msg "setting up keymaps" 0
 /bin/busybox loadkmap </lib/keymaps/de.map
 
@@ -309,22 +337,6 @@ sudo mv inetd.conf guest-rootfs/etc/
 
 echo "creating inittab"
 
-#console::askfirst:-/bin/ash
-#tty1::askfirst:-/bin/ash
-#tty2::askfirst:-/bin/ash
-#tty3::askfirst:-/bin/ash
-#tty4::askfirst:-/bin/ash
-#tty4::respawn:/sbin/getty 38400 tty5
-#tty5::respawn:/sbin/getty 38400 tty6
-#::restart:/sbin/init
-#::ctrlaltdel:/sbin/reboot
-#::shutdown:/bin/umount -a -r
-#::shutdown:/sbin/swapoff -a
-# null::sysinit:/etc/init.d/rcS
-#console::respawn:/bin/ash
-
-# ::sysinit:/bin/ash
-
 echo $"
 ::sysinit:/etc/init.d/rcS
 ::askfirst:-/bin/ash
@@ -336,9 +348,10 @@ echo $"
 mv inittab guest-rootfs/etc/
 
 
+
 echo "creating root users"
 mkdir guest-rootfs/root
-echo "root:WL3YPq72lgy0Q:0:0:Root User,,,:/root:/bin/ash" >guest-rootfs/etc/passwd
+echo "root:BE3og7CN4W/wI:0:0:Root User,,,:/root:/bin/ash" >guest-rootfs/etc/passwd
 echo "root:x:0:" >guest-rootfs/etc/group
 cp -a /etc/services guest-rootfs/etc/
 
@@ -348,6 +361,49 @@ if [ -e busybox-*/busybox ]; then
 else
     echo "   !!! NO BUSYBOX AVAILABLE !!! "
 fi
+
+echo "copy stress-ng binaries"
+if [ -e ../tools/stress-ng/stress-ng ]; then
+    cp -a ../tools/stress-ng/stress-ng guest-rootfs/bin/
+else
+    echo "   !!! NO STRESS_NG AVAILABLE !!! "
+fi
+
+
+echo "create stress-ng control script"
+
+echo $"#!/bin/ash
+
+RUNTIME=20
+
+NUM_CPUS=`cat /proc/cpuinfo | grep  '^processor[[:space:]]*:[[:space:]]*[0-9]\+$' | wc -l`
+
+trap \"killall stress-ng 2>&1>/dev/null; rm -f /tmp/cpu_stress_control; exit\" SIGHUP SIGINT SIGTERM
+
+
+for I in \$(seq 0 10 100); do
+    echo \"limiting to $I% CPU \"
+    echo \$I >/tmp/cpu_stress_control
+    /bin/stress-ng --cpu \$NUM_CPUS   -l \$I -t \$RUNTIME
+done
+
+rm -f /tmp/cpu_stress_control
+killall stress-ng 2>&1>/dev/null
+
+" >cpu_stress_control.sh
+chmod +x cpu_stress_control.sh
+mv cpu_stress_control.sh guest-rootfs/bin/
+
+
+
+echo "copy load test binaries"
+if [ -e ../userspace/timer-netsend-userspace-only ]; then
+    cp -a ../userspace/timer-netsend-userspace-only guest-rootfs/bin/
+else
+    echo "   !!! NO LOAD TEST AVAILABLE !!! "
+fi
+
+
 
 echo "copy libnss libs"
 cp -a squashfswork/lib64/libnss_compat* guest-rootfs/lib/
@@ -359,10 +415,12 @@ echo "adjusting symlinks"
 cd guest-rootfs/sbin/
 rm -f init
 ln -s ../bin/busybox init
-# ln -s ../bin/busybox setsid
 cd -
-
-
+cd guest-rootfs/bin/
+rm -f scp
+ln -s ../sbin/dropbearmulti scp
+ln -s busybox seq
+cd -
 
 echo "copy dropbear ssh binaries"
 if [ -e dropbear-*/dropbear ]; then
@@ -382,7 +440,8 @@ mkdir guest-rootfs/etc/dropbear
 
 echo "copy guest-rootfs to root"
 sudo cp -a guest-rootfs/* guest-root/
-sudo mkdir guest-boot/grub
+sudo mkdir -p boot/grub
+
 
 #'set default="0"
 #set timeout="0"
@@ -408,17 +467,18 @@ menuentry "Gentoo Guest" {
     initrd /gentoo.igz
 }
 ' >grub.cfg
-sudo mv grub.cfg guest-boot/grub
+sudo mv grub.cfg boot/grub
 
 
-echo "installing grub into image, ioctrl errors are ok"
-sudo ${GRUB_INSTALL}/usr/sbin/grub-install --no-floppy --modules="biosdisk part_msdos xzio ext2 configfile normal multiboot" --root-directory=${WORKDIR}/ ${LISTED_PARTITION_DEV}
+echo "installing grub into image"
+sudo ${GRUB_INSTALL}/usr/sbin/grub-install --no-floppy --modules="biosdisk part_msdos xzio ext2 configfile normal multiboot" --root-directory=${WORKDIR}/ ${LISTED_PARTITION_DEV} 2>/dev/null
 # sudo ${GRUB_INSTALL}/usr/sbin/grub-install --no-floppy  ${LISTED_PARTITION_DEV}
 
+
 echo "copy kernel and initrd"
-sudo rsync --info=progress2 -a vmassemble/isolinux/gentoo* guest-boot/
-sudo rsync --info=progress2 -a vmassemble/isolinux/boot* guest-boot/
-sudo rsync --info=progress2 -a vmassemble/isolinux/*.map guest-boot/
+sudo rsync --info=progress2 -a vmassemble/isolinux/gentoo* boot/
+sudo rsync --info=progress2 -a vmassemble/isolinux/boot* boot/
+sudo rsync --info=progress2 -a vmassemble/isolinux/*.map boot/
 sudo rm -f guest-rootfs/boot/gentoo*
 sudo rm -f guest-rootfs/boot/boot*
 sudo rm -f guest-rootfs/boot/*.map
