@@ -603,12 +603,25 @@ sudo chroot ${SQUASHFSWORK} /cfgchroot1.sh
 echo_ok
 
 
-echo_announce_n "patching kernel for automatic Kconfiglib configuration"
+echo_announce "patching kernel for automatic Kconfiglib configuration"
 cd ${SQUASHFSWORK}/usr/src/linux
 pw_request_hint
+sudo git init
 sudo git apply Kconfiglib/makefile.patch
-cd -
-echo_ok
+##########################
+
+if ! grep scriptconfig scripts/kconfig/Makefile >/dev/null; then
+    echo_fail
+    echo "git silentconfig patch was not applied - please check manually and hit any key to continue."
+    read
+else
+    echo_ok
+fi
+cd - >/dev/null
+
+
+
+
 
 echo_announce_n "running configuration script #2 in chroot"
 pw_request_hint
