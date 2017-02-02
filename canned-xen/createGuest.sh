@@ -65,7 +65,7 @@ echo_ok
 download "Busybox" "${BUSYBOX_URL_INDEX}" "${BUSYBOX_URL}" "downloads/" "busybox-*/*" "xjvf" "busybox-*.tar.bz2"
 
 if  ! ls busybox-*/busybox 1> /dev/null 2>&1; then
-    echo "busybox compile"
+    echo_announce "busybox compile"
     cd busybox-*
     rm -f .config
     make clean
@@ -559,7 +559,7 @@ echo_announce "cloning guest1 to guest2"
 rsync --info=progress2 -a canned-xen-guest1.img canned-xen-guest2.img
 echo_ok
 
-echo_announce_n "retreiving partition information for guest2"
+echo_announce "retreiving partition information for guest2"
 
 LISTED_PARTITIONS=("`my_sudo kpartx -l canned-xen-guest2.img | sed 's/^\(.*\)$/"\1";/'`")
 LISTED_PARTITION_BOOT="`echo ${LISTED_PARTITIONS} | awk -F '"' '{print $2}' | sed 's/\(loop.*\) :.*/\1/'`"

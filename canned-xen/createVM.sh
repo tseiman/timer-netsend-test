@@ -59,8 +59,7 @@ LOCALDIR_DIR="$( cd -P "$( dirname "${LOCALDIR_SOURCE}" )" && pwd )"
 . ${LOCALDIR_DIR}/commons.sh
 
 
-
-
+cd "${LOCALDIR_DIR}"
 
 
 unmount_all() {
@@ -150,6 +149,21 @@ for PROG in ${REQUIREDPROGRAMS}; do
     command -v $PROG >/dev/null 2>&1 || { echo -n >&2 "ERROR: \"${PROG}\" required but not found - exiting!"; echo_fail; exit; }
     echo_ok
 done
+
+
+echo_announce_n "checking disk space minimum ${MIN_DISK_FREE}kByte... "
+DISK_FREE=$(df -Pk "${LOCALDIR_DIR}"  | tail -1 | awk '{print $4}')
+my_sudo true
+ALLREADY_ALLOCATED=$(sudo du -ks "${LOCALDIR_DIR}" | sed "s/\([0-9]*\).*/\1/")   # "
+MIN_DISK_FREE_CALC=$(expr ${MIN_DISK_FREE} - ${ALLREADY_ALLOCATED})
+if [ ${DISK_FREE} -lt ${MIN_DISK_FREE_CALC} ]; then
+    echo -n "ERROR: the partition the script runs on has not enough diskspace (needs ${MIN_DISK_FREE}kByte but has ${DISK_FREE}kByte, already allocated by previous run, ready to be overwritten: ${ALLREADY_ALLOCATED}kByte ) "
+    echo_fail
+    exit
+else
+    echo_ok
+fi
+
 
 echo_announce_n "checking if system is 64bit... "
 if [[ ! "`uname -m`" =~ .*x86_64.* ]]; then
@@ -345,14 +359,14 @@ echo_ok
 echo_announce_n  "adding /vms directory and guest images to \" ${SQUASHFSWORK}\"... "
 pw_request_hint
 sudo mkdir -p  ${SQUASHFSWORK}/var/vms
-if [ ! -e "${GUESTDIR}/canned-xen-guest1.img" ]; then
+if [ ! -e "${GUESTDIR}/canned-xen-guest1.img" ] || [ ! -e "${GUESTDIR}/canned-xen-guest2.img" ]; then
     echo_announce "have to generate guest images first as not done yet !"
     cd ./${GUESTDIR}
     ./createGuest.sh
     cd -
 fi
-if [ ! -e "${GUESTDIR}/canned-xen-guest1.img" ]; then
-    echo -n "somehow the guest image creation of \"${GUESTDIR}/canned-xen-guest1.img\" wasen't ok - EXITing now !"
+if [ ! -e "${GUESTDIR}/canned-xen-guest1.img" ] || [ ! -e "${GUESTDIR}/canned-xen-guest2.img" ]; then
+    echo -n "somehow the guest image creation of \"${GUESTDIR}/canned-xen-guest*.img\" wasen't ok - EXITing now !"
     echo_fail
     exit
 fi
@@ -364,8 +378,7 @@ if [ $# -ne 0 ]; then
     fi
 fi
 
-pw_request_hint
-sudo rsync --info=progress2 -a  ${GUESTDIR}/canned-xen-guest1.img ${SQUASHFSWORK}/var/vms
+my_sudo rsync --info=progress2 -a  ${GUESTDIR}/canned-xen-guest*.img ${SQUASHFSWORK}/var/vms
 echo_ok
 
 
@@ -458,14 +471,14 @@ sudo mv changeconfig.py ${SQUASHFSWORK}/
 echo_ok
 
 echo_announce_n  "Adjusting  network symlinks"
-cd ${SQUASHFSWORK}/etc/conf.d
-ln -s net.lo net.br0
+cd ${SQUASHFSWORK}/etc/init.d
+my_sudo ln -s net.lo net.br0
 cd - >/dev/null
 echo_ok
 
 
 echo_announce_n  "fixing xen logging path"
-mkdir -p ${SQUASHFSWORK}/var/log/xen
+my_sudo mkdir -p ${SQUASHFSWORK}/var/log/xen
 echo_ok
 
 
@@ -653,7 +666,7 @@ sudo rsync --info=progress2 -a  syslinux-*/bios/com32/mboot/mboot.c32 ${DOM0_WOR
 sudo rsync --info=progress2 -a  syslinux-*/bios/com32/menu/menu.c32 ${DOM0_WORKDIR}/isolinux/
 echo_ok
 
-echo_announce "caching distfiles for next run files... "
+echo_announce "caching distfiles for next run ... "
     rsync --info=progress2 -a  ${SQUASHFSWORK}/usr/portage/distfiles/* ${DISTCACHE}/
 echo_ok
 
@@ -676,7 +689,7 @@ echo_announce_n "generating new initrd... "
 cd ${INITRDWORK}
 pwd
 find . | cpio --quiet --dereference -o -H newc >../gentoo.i
-xz -C crc32 -z -c ../gentoo.i >../${INITRDORIGFILE}
+my_sudo xz -C crc32 -z -c ../gentoo.i >../${INITRDORIGFILE}
 cd -
 echo_ok
 
